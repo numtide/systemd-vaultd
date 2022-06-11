@@ -20,7 +20,37 @@ type server struct {
 	connectionClosed chan int
 }
 
+func inheritSocket() *net.UnixListener {
+	socks := systemdSockets(true)
+	stat := &syscall.Stat_t {}
+	for _, s := range socks {
+		fd := s.Fd()
+		err := syscall.Fstat(int(fd), stat);
+		if err != nil {
+			log.Printf("Received invalid file descriptor from systemd for fd%d: %v", fd, err)
+			continue
+		}
+		listener, err := net.FileListener(s)
+		if err != nil {
+			log.Printf("Received file descriptor %d from systemd that is not a valid socket: %v", fd, err)
+			continue
+		}
+		unixListener, ok := listener.(*net.UnixListener);
+		if !ok {
+			log.Printf("Ignore file descriptor %d from systemd, which is not a unix socket", fd)
+			continue
+		}
+		log.Printf("Use unix socket received from systemd")
+		return unixListener
+	}
+	return nil
+}
+
 func listenSocket(path string) (*net.UnixListener, error) {
+	s := inheritSocket()
+	if s != nil {
+		return s, nil
+	}
 	if err := syscall.Unlink(path); err != nil && !os.IsNotExist(err) {
 		return nil, fmt.Errorf("Cannot remove old socket: %v", err)
 	}

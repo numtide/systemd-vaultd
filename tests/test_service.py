@@ -3,6 +3,7 @@ import subprocess
 from dataclasses import dataclass
 from command import Command, run
 from pathlib import Path
+import time
 
 import string
 import random
@@ -27,14 +28,17 @@ def random_service(secrets_dir: Path) -> Service:
     return Service(service, secret_name, secret_path)
 
 
-def test_service(systemd_vault: Path, command: Command, tempdir: Path) -> None:
+def test_socket_activation(
+    systemd_vault: Path, command: Command, tempdir: Path
+) -> None:
     secrets_dir = tempdir / "secrets"
+    secrets_dir.mkdir()
     sock = tempdir / "sock"
-    command.run([str(systemd_vault), "-secrets", str(secrets_dir), "-sock", str(sock)])
-    import time
+
+    command.run(["systemd-socket-activate", "--listen", str(sock), str(systemd_vault), "-secrets", str(secrets_dir), "-sock", str(sock)])
 
     while not sock.exists():
-        time.sleep(1)
+        time.sleep(0.1)
 
     service = random_service(secrets_dir)
     service.secret_path.write_text("foo")
@@ -58,6 +62,15 @@ def test_service(systemd_vault: Path, command: Command, tempdir: Path) -> None:
     )
     assert out.stdout == "foo"
     assert out.returncode == 0
+
+
+def test_blocking_secret(systemd_vault: Path, command: Command, tempdir: Path) -> None:
+    secrets_dir = tempdir / "secrets"
+    sock = tempdir / "sock"
+    command.run([str(systemd_vault), "-secrets", str(secrets_dir), "-sock", str(sock)])
+
+    while not sock.exists():
+        time.sleep(0.1)
 
     service = random_service(secrets_dir)
 
