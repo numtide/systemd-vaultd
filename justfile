@@ -9,6 +9,11 @@ fmt:
 build:
     go build .
 
+# Run linters not covered by treefmt
+lint:
+    golangci-lint run
+    mypy ./tests
+
 # Run unitests
 test:
      pytest -s ./tests
