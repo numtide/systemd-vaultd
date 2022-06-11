@@ -3,6 +3,6 @@
 pytest_plugins = [
     "command",
     "root",
-    "systemd_vault",
+    "systemd_vaultd",
     "tempdir",
 ]

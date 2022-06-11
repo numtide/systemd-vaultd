@@ -29,7 +29,7 @@ def random_service(secrets_dir: Path) -> Service:
 
 
 def test_socket_activation(
-    systemd_vault: Path, command: Command, tempdir: Path
+    systemd_vaultd: Path, command: Command, tempdir: Path
 ) -> None:
     secrets_dir = tempdir / "secrets"
     secrets_dir.mkdir()
@@ -40,7 +40,7 @@ def test_socket_activation(
             "systemd-socket-activate",
             "--listen",
             str(sock),
-            str(systemd_vault),
+            str(systemd_vaultd),
             "-secrets",
             str(secrets_dir),
             "-sock",
@@ -75,10 +75,10 @@ def test_socket_activation(
     assert out.returncode == 0
 
 
-def test_blocking_secret(systemd_vault: Path, command: Command, tempdir: Path) -> None:
+def test_blocking_secret(systemd_vaultd: Path, command: Command, tempdir: Path) -> None:
     secrets_dir = tempdir / "secrets"
     sock = tempdir / "sock"
-    command.run([str(systemd_vault), "-secrets", str(secrets_dir), "-sock", str(sock)])
+    command.run([str(systemd_vaultd), "-secrets", str(secrets_dir), "-sock", str(sock)])
 
     while not sock.exists():
         time.sleep(0.1)
