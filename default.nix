@@ -4,11 +4,6 @@ buildGoModule {
   name = "systemd-vaultd";
   src = ./.;
   vendorSha256 = null;
-  checkInputs = [
-    python3.pkgs.pytest
-    golangci-lint
-    vault
-  ];
   meta = with lib; {
     description = "A proxy for secrets between systemd services and vault";
     homepage = "https://github.com/numtide/systemd-vaultd";
@@ -17,9 +12,3 @@ buildGoModule {
     platforms = platforms.unix;
   };
 }
-#mkShell {
-#  nativeBuildInputs = [
-#    go
-#    hivemind
-#  ];
-#}
