@@ -1,0 +1,9 @@
+.DS_Store
+.idea
+*.log
+systemd-vault
+
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
+*$py.class

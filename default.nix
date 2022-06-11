@@ -4,5 +4,7 @@ mkShell {
     go
     vault
     python3.pkgs.pytest
+    golangci-lint
+    hivemind
   ];
 }

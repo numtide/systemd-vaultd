@@ -1,3 +1,3 @@
-module github.com/numtide/vault-nixos
+module github.com/numtide/systemd-vault
 
 go 1.17
