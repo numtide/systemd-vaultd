@@ -1,7 +1,7 @@
 with import <nixpkgs> {};
 
 buildGoModule {
-  name = "systemd-vault";
+  name = "systemd-vaultd";
   src = ./.;
   vendorSha256 = null;
   checkInputs = [
@@ -11,7 +11,7 @@ buildGoModule {
   ];
   meta = with lib; {
     description = "A proxy for secrets between systemd services and vault";
-    homepage = "https://github.com/numtide/systemd-vault";
+    homepage = "https://github.com/numtide/systemd-vaultd";
     license = licenses.mit;
     maintainers = with maintainers; [ mic92 ];
     platforms = platforms.unix;

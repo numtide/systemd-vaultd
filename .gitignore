@@ -1,7 +1,12 @@
 .DS_Store
 .idea
 *.log
-systemd-vault
+
+# binary
+systemd-vaultd
+
+# nix-build symlinks
+result*
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
