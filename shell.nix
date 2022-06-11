@@ -15,5 +15,6 @@ with pkgs;
       hivemind
       go
       treefmt
+      just
     ];
   }
