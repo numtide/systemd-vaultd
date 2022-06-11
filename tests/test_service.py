@@ -35,7 +35,18 @@ def test_socket_activation(
     secrets_dir.mkdir()
     sock = tempdir / "sock"
 
-    command.run(["systemd-socket-activate", "--listen", str(sock), str(systemd_vault), "-secrets", str(secrets_dir), "-sock", str(sock)])
+    command.run(
+        [
+            "systemd-socket-activate",
+            "--listen",
+            str(sock),
+            str(systemd_vault),
+            "-secrets",
+            str(secrets_dir),
+            "-sock",
+            str(sock),
+        ]
+    )
 
     while not sock.exists():
         time.sleep(0.1)

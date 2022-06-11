@@ -1,14 +1,19 @@
-{ pkgs ? import <nixpkgs> {} }:
-
+{pkgs ? import <nixpkgs> {}}:
 with pkgs;
+  mkShell {
+    buildInputs = [
+      python3.pkgs.pytest
+      python3.pkgs.flake8
+      python3.pkgs.black
+      python3.pkgs.mypy
 
-mkShell {
-  buildInputs = [
-    python3.pkgs.pytest
-    golangci-lint
-    vault
-    systemd
-    hivemind
-    go
-  ];
-}
+      gofumpt
+      golangci-lint
+      alejandra
+      vault
+      systemd
+      hivemind
+      go
+      treefmt
+    ];
+  }

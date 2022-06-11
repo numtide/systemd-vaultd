@@ -22,10 +22,10 @@ type server struct {
 
 func inheritSocket() *net.UnixListener {
 	socks := systemdSockets(true)
-	stat := &syscall.Stat_t {}
+	stat := &syscall.Stat_t{}
 	for _, s := range socks {
 		fd := s.Fd()
-		err := syscall.Fstat(int(fd), stat);
+		err := syscall.Fstat(int(fd), stat)
 		if err != nil {
 			log.Printf("Received invalid file descriptor from systemd for fd%d: %v", fd, err)
 			continue
@@ -35,7 +35,7 @@ func inheritSocket() *net.UnixListener {
 			log.Printf("Received file descriptor %d from systemd that is not a valid socket: %v", fd, err)
 			continue
 		}
-		unixListener, ok := listener.(*net.UnixListener);
+		unixListener, ok := listener.(*net.UnixListener)
 		if !ok {
 			log.Printf("Ignore file descriptor %d from systemd, which is not a unix socket", fd)
 			continue

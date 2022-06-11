@@ -1,0 +1,21 @@
+[formatter.nix]
+command = "alejandra"
+includes = ["*.nix"]
+
+[formatter.python]
+command = "sh"
+options = [
+    "-eucx",
+    """
+flake8 "$@"
+black "$@"
+    """
+]
+includes = ["*.py"]
+excludes = []
+
+[formatter.go]
+command = "gofumpt"
+options = ["-w"]
+includes = ["*.go"]
+excludes = []

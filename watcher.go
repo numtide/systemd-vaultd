@@ -174,7 +174,7 @@ func (s *server) setupWatcher(dir string) error {
 		return fmt.Errorf("Failed to initialize inotify: %v", err)
 	}
 	flags := uint32(syscall.IN_CREATE | syscall.IN_MOVED_TO | syscall.IN_ONLYDIR)
-	res := os.MkdirAll(dir, 0700)
+	res := os.MkdirAll(dir, 0o700)
 	if err != nil && !os.IsNotExist(res) {
 		return fmt.Errorf("Failed to create secret directory: %v", err)
 	}
