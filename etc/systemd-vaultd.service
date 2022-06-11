@@ -1,0 +1,21 @@
+[Unit]
+Description=systemd-vault daemon
+Requires=systemd-vaultd.socket
+
+[Service]
+ExecStart=/usr/bin/systemd-vaultd
+Restart=yes
+ProtectSystem=strict
+ProtectHome=yes
+PrivateDevices=yes
+PrivateNetwork=yes
+PrivateUsers=yes
+ProtectKernelTunables=yes
+ProtectKernelModules=yes
+ProtectControlGroups=yes
+RestrictAddressFamilies=AF_UNIX
+MemoryDenyWriteExecute=yes
+SystemCallFilter=@default @file-system @basic-io @system-service @signal @io-event @network-io
+
+[Install]
+Also=systemd-vaultd.socket
