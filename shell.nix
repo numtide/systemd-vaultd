@@ -1,6 +1,6 @@
 {pkgs ? import <nixpkgs> {}}:
 with pkgs;
-  mkShell {
+  mkShellNoCC {
     buildInputs = [
       python3.pkgs.pytest
       python3.pkgs.flake8
