@@ -34,7 +34,9 @@ func (s *server) handleEpoll() {
 		ready := events[:n]
 		for _, event := range ready {
 			if event.Events&(syscall.EPOLLHUP|syscall.EPOLLERR) != 0 {
-				s.epollDelete(int(event.Fd))
+				if err := s.epollDelete(int(event.Fd)); err != nil {
+					log.Printf("failed to remove socket from epoll: %s", err)
+				}
 				s.connectionClosed <- int(event.Fd)
 			} else {
 				log.Printf("Unhandled epoll event: %d for fd %d", event.Events, event.Fd)

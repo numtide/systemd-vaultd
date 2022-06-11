@@ -18,19 +18,9 @@ type inotifyRequest struct {
 	conn     *net.UnixConn
 }
 
-type watcher struct {
-	requests         chan inotifyRequest
-	connectionEvents chan int
-	dir              string
-}
-
 type connection struct {
 	fd         int
 	connection *net.UnixConn
-}
-
-type watch struct {
-	connections []connection
 }
 
 func readEvents(inotifyFd int, events chan string) {
@@ -111,7 +101,7 @@ func (s *server) watch(inotifyFd int) {
 			fdToPath[fd] = req.filename
 			conns, ok := connsForPath[req.filename]
 			if ok {
-				conns = append(conns, connection{fd, req.conn})
+				connsForPath[req.filename] = append(conns, connection{fd, req.conn})
 				continue
 			}
 
@@ -128,18 +118,21 @@ func (s *server) watch(inotifyFd int) {
 			delete(connsForPath, fname)
 
 			for _, conn := range conns {
-				f, err := os.Open(filepath.Join(s.SecretDir, fname))
-				defer f.Close()
 				defer delete(fdToPath, conn.fd)
 
+				f, err := os.Open(filepath.Join(s.SecretDir, fname))
 				if err == nil {
+					defer f.Close()
+
 					_, err := io.Copy(conn.connection, f)
 					if err == nil {
 						log.Printf("Served %s to %s", fname, conn.connection.RemoteAddr().String())
 					} else {
 						log.Printf("Failed to send secret: %v", err)
 					}
-					s.epollDelete(conn.fd)
+					if err := s.epollDelete(conn.fd); err != nil {
+						log.Printf("failed to remove socket from epoll: %s", err)
+					}
 					if err := syscall.Shutdown(conn.fd, syscall.SHUT_RDWR); err != nil {
 						log.Printf("Failed to shutdown socket: %v", err)
 					}
