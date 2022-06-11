@@ -142,13 +142,13 @@ var secretDir, socketDir string
 func init() {
 	defaultDir := os.Getenv("SYSTEMD_VAULT_SECRETS")
 	if defaultDir == "" {
-		defaultDir = "/run/systemd-vault"
+		defaultDir = "/run/systemd-vaultd/secrets"
 	}
 	flag.StringVar(&secretDir, "secrets", defaultDir, "directory where secrets are looked up")
 
 	defaultSock := os.Getenv("SYSTEMD_VAULT_SOCK")
 	if defaultSock == "" {
-		defaultSock = "/run/systemd-vault.sock"
+		defaultSock = "/run/systemd-vaultd/sock"
 	}
 	flag.StringVar(&socketDir, "sock", defaultSock, "unix socket to listen to for systemd requests")
 	flag.Parse()

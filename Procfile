@@ -1,2 +1,2 @@
 vault: vault server -dev
-systemd-vault: go run .
+systemd-vaultd: go run . -secrets tmp/secrets -sock tmp/sock

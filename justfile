@@ -17,3 +17,7 @@ lint:
 # Run unitests
 test:
      pytest -s ./tests
+
+# Local vault + systemd-vaultd
+up:
+    hivemind
