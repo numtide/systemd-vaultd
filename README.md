@@ -2,7 +2,7 @@
 
 systemd-vaultd is a proxy between systemd and [vault
 agent](https://vaultproject.io). It provides a unix socket that can be used in
-systemd services in the `LoadCredential` option and than waits for vault agent
+systemd services in the `LoadCredential` option and then waits for vault agent
 to write these secrets at `/run/systemd-vaultd/<service_name>-<secret_name>`.
 
 ## Systemd's `LoadCredential` option
@@ -34,7 +34,7 @@ ExecStart=/usr/bin/myservice.sh
 LoadCredential=foobar:/run/systemd-vaultd/sock
 ```
 
-vault agent is than expected to write secrets to `/run/systemd-vaultd/`
+vault agent is then expected to write secrets to `/run/systemd-vaultd/`
 
 ```
 template {
@@ -44,7 +44,7 @@ template {
 ```
 
 When `myservice` is started, systemd will open a connection to `systemd-vaultd`'s socket.
-`systemd-vaultd` than either serve the secrets from `/run/systemd-vaultd/secrets/myservice.service-foo`
+`systemd-vaultd` then either serve the secrets from `/run/systemd-vaultd/secrets/myservice.service-foo`
 or it waits with inotify on secret directory for vault agent to write the secret.
 
 ## Installation
