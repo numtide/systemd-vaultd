@@ -2,13 +2,11 @@ import subprocess
 from pathlib import Path
 import time
 
-from command import Command, run
+from command import Command
 from random_service import random_service
 
 
-def test_blocking_secret(
-    systemd_vaultd: Path, command: Command, tempdir: Path
-) -> None:
+def test_blocking_secret(systemd_vaultd: Path, command: Command, tempdir: Path) -> None:
     secrets_dir = tempdir / "secrets"
     sock = tempdir / "sock"
     command.run([str(systemd_vaultd), "-secrets", str(secrets_dir), "-sock", str(sock)])

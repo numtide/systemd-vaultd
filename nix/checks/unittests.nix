@@ -4,13 +4,13 @@
   pkgs,
   lib,
   coreutils,
-  systemd
+  systemd,
 }: let
   systemd-vaultd = pkgs.callPackage ../../default.nix {};
 in
   writeShellScript "unittests" ''
     set -eu -o pipefail
-    export PATH=${lib.makeBinPath [ python3.pkgs.pytest coreutils systemd ]}
+    export PATH=${lib.makeBinPath [python3.pkgs.pytest coreutils systemd]}
     export SYSTEMD_VAULTD_BIN=${systemd-vaultd}/bin/systemd-vaultd
     export TMPDIR=$(mktemp -d)
     trap 'rm -rf $TMPDIR' EXIT

@@ -8,7 +8,7 @@
       inherit (pkgs) system;
     };
 in {
-  ssh-keys = makeTest' {
+  unittests = makeTest' {
     name = "unitests";
     nodes.server = {pkgs, ...}: {
       # Important to get the systemd service running for root

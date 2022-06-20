@@ -7,8 +7,11 @@ from pathlib import Path
 from command import Command, run
 from random_service import random_service
 
+
 def test_socket_activation(
-        systemd_vaultd: Path, command: Command, tempdir: Path,
+    systemd_vaultd: Path,
+    command: Command,
+    tempdir: Path,
 ) -> None:
     secrets_dir = tempdir / "secrets"
     secrets_dir.mkdir()
