@@ -24,20 +24,18 @@
       }: {
         packages.default = pkgs.callPackage ./default.nix {};
         devShells.default = pkgs.callPackage ./shell.nix {};
-        checks = {
+        checks = let
+          nixosTests = (pkgs.callPackages ./nix/checks/nixos-test.nix {
+            makeTest = import (pkgs.path + "/nixos/tests/make-test-python.nix");
+            vaultAgentModule = self.nixosModules.vaultAgent;
+          });
+        in {
           treefmt = pkgs.callPackage ./nix/checks/treefmt.nix {};
-          inherit
-            (pkgs.callPackages ./nix/checks/nixos-test.nix {
-              makeTest = import (pkgs.path + "/nixos/tests/make-test-python.nix");
-            })
-            unittests
-            ;
+          inherit (nixosTests) unittests vault-agent;
         };
       };
-      flake = {
-        # The usual flake attributes can be defined here, including system-
-        # agnostic ones like nixosModule and system-enumerating ones, although
-        # those are more easily expressed in perSystem.
+      flake.nixosModules = {
+        vaultAgent = ./nix/modules/vault-agent.nix;
       };
     };
 }
