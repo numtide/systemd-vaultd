@@ -1,6 +1,7 @@
 [Unit]
-Description=systemd-vault daemon
+Description=systemd-vaultd daemon
 Requires=systemd-vaultd.socket
+After=systemd-vaultd.socket
 
 [Service]
 ExecStart=/usr/bin/systemd-vaultd

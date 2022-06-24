@@ -1,5 +1,5 @@
 [Unit]
-Description=systemd-vault activation socket
+Description=systemd-vaultd socket
 
 [Socket]
 ListenStream=/run/systemd-vaultd/sock
