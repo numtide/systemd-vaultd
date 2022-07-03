@@ -1,6 +1,7 @@
 package main
 
 import (
+	"errors"
 	"log"
 	"syscall"
 )
@@ -34,7 +35,7 @@ func (s *server) handleEpoll() {
 		ready := events[:n]
 		for _, event := range ready {
 			if event.Events&(syscall.EPOLLHUP|syscall.EPOLLERR) != 0 {
-				if err := s.epollDelete(int(event.Fd)); err != nil {
+				if err := s.epollDelete(int(event.Fd)); err != nil && !errors.Is(err, syscall.ENOENT) {
 					log.Printf("failed to remove socket from epoll: %s", err)
 				}
 				s.connectionClosed <- int(event.Fd)

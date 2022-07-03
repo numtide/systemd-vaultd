@@ -1,0 +1,25 @@
+#!/usr/bin/env bash
+set -eux -o pipefail
+export VAULT_ADDR=http://127.0.0.1:8200
+export VAULT_TOKEN=secret
+
+while ! vault status; do
+  sleep 1
+done
+
+mkdir -p tmp
+
+# capabilities of our vault agent
+cat > tmp/policy-file.hcl <<EOF
+path "secret/data/*" {
+  capabilities = ["read"]
+}
+EOF
+vault policy write demo tmp/policy-file.hcl
+vault kv put secret/my-secret foo=bar
+
+# role for our vault agent
+vault auth enable approle
+vault write auth/approle/role/role1 bind_secret_id=true token_policies=demo
+echo -n $(vault read -format json auth/approle/role/role1/role-id | jq -r .data.role_id) > tmp/roleID
+echo -n $(vault write -force -format json auth/approle/role/role1/secret-id | jq -r .data.secret_id) > tmp/secretID

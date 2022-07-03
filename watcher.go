@@ -130,7 +130,7 @@ func (s *server) watch(inotifyFd int) {
 					} else {
 						log.Printf("Failed to send secret: %v", err)
 					}
-					if err := s.epollDelete(conn.fd); err != nil {
+					if err := s.epollDelete(conn.fd); err != nil && !errors.Is(err, syscall.ENOENT) {
 						log.Printf("failed to remove socket from epoll: %s", err)
 					}
 					if err := syscall.Shutdown(conn.fd, syscall.SHUT_RDWR); err != nil {
