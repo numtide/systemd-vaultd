@@ -24,6 +24,7 @@ type connection struct {
 }
 
 func readEvents(inotifyFd int, events chan string) {
+	defer syscall.Close(inotifyFd)
 	var buf [syscall.SizeofInotifyEvent * 4096]byte // Buffer for a maximum of 4096 raw events
 	for {
 		n, err := syscall.Read(inotifyFd, buf[:])
@@ -45,7 +46,7 @@ func readEvents(inotifyFd int, events chan string) {
 			continue
 		}
 		var offset uint32
-		for offset <= uint32(n-syscall.SizeofInotifyEvent) {
+		for offset + syscall.SizeofInotifyEvent <= uint32(n) {
 			// Point "raw" to the event in the buffer
 			raw := (*syscall.InotifyEvent)(unsafe.Pointer(&buf[offset]))
 
@@ -58,11 +59,13 @@ func readEvents(inotifyFd int, events chan string) {
 			}
 			if nameLen > 0 {
 				// Point "bytes" at the first byte of the filename
-				bytes := (*[syscall.PathMax]byte)(unsafe.Pointer(&buf[offset+syscall.SizeofInotifyEvent]))
+				bytes := (*[syscall.PathMax]byte)(unsafe.Pointer(&buf[uintptr(offset)+unsafe.Offsetof(raw.Name)]))
 				// The filename is padded with NULL bytes. TrimRight() gets rid of those.
 				fname := strings.TrimRight(string(bytes[0:nameLen]), "\000")
 				log.Printf("Detected added file: %s", fname)
 				events <- fname
+			} else {
+				log.Printf("file added without length!?")
 			}
 
 			// Move to the next event in the buffer
@@ -82,8 +85,6 @@ func connFd(conn *net.UnixConn) (int, error) {
 func (s *server) watch(inotifyFd int) {
 	connsForPath := make(map[string][]connection)
 	fdToPath := make(map[int]string)
-
-	defer syscall.Close(inotifyFd)
 
 	fsEvents := make(chan string)
 	go readEvents(inotifyFd, fsEvents)
