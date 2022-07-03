@@ -4,6 +4,7 @@
 
 # binary
 systemd-vaultd
+tmp/
 
 # nix-build symlinks
 result*
