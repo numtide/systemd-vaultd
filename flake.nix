@@ -27,15 +27,16 @@
         checks = let
           nixosTests = (pkgs.callPackages ./nix/checks/nixos-test.nix {
             makeTest = import (pkgs.path + "/nixos/tests/make-test-python.nix");
-            vaultAgentModule = self.nixosModules.vaultAgent;
+            inherit (self.nixosModules) vaultAgent systemdVaultd;
           });
         in {
           treefmt = pkgs.callPackage ./nix/checks/treefmt.nix {};
-          inherit (nixosTests) unittests vault-agent;
+          inherit (nixosTests) unittests vault-agent systemd-vaultd;
         };
       };
       flake.nixosModules = {
         vaultAgent = ./nix/modules/vault-agent.nix;
+        systemdVaultd = ./nix/modules/systemd-vaultd.nix;
       };
     };
 }
