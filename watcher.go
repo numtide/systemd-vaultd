@@ -150,7 +150,7 @@ func (s *server) watch(inotifyFd int) {
 			conns := connsForPath[path]
 			if conns == nil {
 				// watcher has been already deregistered
-				return
+				continue
 			}
 			for idx, c := range conns {
 				if c.fd == fd {
