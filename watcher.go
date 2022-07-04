@@ -46,7 +46,7 @@ func readEvents(inotifyFd int, events chan string) {
 			continue
 		}
 		var offset uint32
-		for offset + syscall.SizeofInotifyEvent <= uint32(n) {
+		for offset+syscall.SizeofInotifyEvent <= uint32(n) {
 			// Point "raw" to the event in the buffer
 			raw := (*syscall.InotifyEvent)(unsafe.Pointer(&buf[offset]))
 
