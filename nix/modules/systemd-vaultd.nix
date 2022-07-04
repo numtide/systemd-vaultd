@@ -20,6 +20,8 @@ in {
     description = "systemd-vaultd daemon";
     requires = ["systemd-vaultd.socket"];
     after = ["systemd-vaultd.socket"];
+    # Restarting can break services waiting for secrets
+    stopIfChanged = false;
     serviceConfig = {
       ExecStart = "${systemd-vaultd}/bin/systemd-vaultd";
     };
