@@ -4,7 +4,8 @@
   inputs = {
     flake-parts.url = "github:hercules-ci/flake-parts";
     flake-parts.inputs.nixpkgs.follows = "nixpkgs";
-    nixpkgs.url = "github:NixOS/nixpkgs/nixos-unstable";
+    # https://github.com/NixOS/nixpkgs/pull/180114
+    nixpkgs.url = "github:Mic92/nixpkgs/vault";
   };
 
   outputs = {
