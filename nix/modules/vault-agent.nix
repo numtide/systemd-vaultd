@@ -1,5 +1,9 @@
-{ config, lib, pkgs, ... }:
-let
+{
+  config,
+  lib,
+  pkgs,
+  ...
+}: let
   cfg = config.services.vault;
   settingsFormat = pkgs.formats.json {};
 
@@ -23,7 +27,7 @@ let
     options = {
       method = lib.mkOption {
         type = lib.types.listOf autoAuthMethodModule;
-        default = [ ];
+        default = [];
       };
     };
   };
@@ -45,17 +49,16 @@ let
     options = {
       auto_auth = lib.mkOption {
         type = autoAuthModule;
-        default = { };
+        default = {};
       };
 
       template_config = lib.mkOption {
         type = templateConfigModule;
-        default = { };
+        default = {};
       };
     };
   };
-in
-{
+in {
   options.services.vault.agents = lib.mkOption {
     default = {};
     description = "Instances of vault agent";
@@ -69,15 +72,17 @@ in
     });
   };
   config = {
-    systemd.services = lib.mapAttrs' (name: instanceCfg: lib.nameValuePair "vault-agent-${name}" ({
-      after = [ "network.target" ];
-      wantedBy = [ "multi-user.target" ];
-      # Needs getent in PATH
-      path = [ pkgs.glibc ];
-      serviceConfig = {
-        Restart = "on-failure";
-        ExecStart = "${pkgs.vault}/bin/vault agent -config=${settingsFormat.generate "agent.json" instanceCfg.settings}";
-      };
-    })) cfg.agents;
+    systemd.services = lib.mapAttrs' (name: instanceCfg:
+      lib.nameValuePair "vault-agent-${name}" {
+        after = ["network.target"];
+        wantedBy = ["multi-user.target"];
+        # Needs getent in PATH
+        path = [pkgs.glibc];
+        serviceConfig = {
+          Restart = "on-failure";
+          ExecStart = "${pkgs.vault}/bin/vault agent -config=${settingsFormat.generate "agent.json" instanceCfg.settings}";
+        };
+      })
+    cfg.agents;
   };
 }
