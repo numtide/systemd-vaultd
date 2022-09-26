@@ -1,11 +1,11 @@
 {
-  runCommandNoCC,
+  runCommand,
   gofumpt,
   alejandra,
   python3,
   treefmt,
 }:
-runCommandNoCC "treefmt" {
+runCommand "treefmt" {
   nativeBuildInputs = [
     gofumpt
     treefmt
