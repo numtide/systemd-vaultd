@@ -134,7 +134,7 @@ func (s *server) watch(inotifyFd int) {
 						log.Printf("Secret map % has no value for key %s", fname, conn.key)
 						continue
 					}
-					_, err = io.WriteString(conn.connection, val)
+					_, err = io.WriteString(conn.connection, fmt.Sprint(val))
 					if err == nil {
 						log.Printf("Served %s to %s", fname, conn.connection.RemoteAddr().String())
 					} else {
