@@ -38,6 +38,7 @@ in {
               config = {
                 role_id_file_path = "/tmp/roleID";
                 secret_id_file_path = "/tmp/secretID";
+                remove_secret_id_file_after_reading = false;
               };
             }
           ];
@@ -91,12 +92,12 @@ in {
         wantedBy = ["multi-user.target"];
         script = ''
           cat $CREDENTIALS_DIRECTORY/secret > /tmp/service2
+          sleep infinity
         '';
-        serviceConfig = {
-          Type = "oneshot";
-          RemainAfterExit = true;
-          LoadCredential = ["secret:/run/systemd-vaultd/sock"];
-        };
+        reload = ''
+          cat $CREDENTIALS_DIRECTORY/secret > /tmp/service2-reload
+        '';
+        serviceConfig.LoadCredential = ["secret:/run/systemd-vaultd/sock"];
         vault = {
           template = ''
             {{ with secret "secret/blocking-secret" }}{{ scratch.MapSet "secrets" "secret" .Data.data.foo }}{{ end }}
@@ -105,6 +106,17 @@ in {
           secrets.secret = {};
         };
       };
+
+      systemd.package = pkgs.systemd.overrideAttrs (old: {
+        patches =
+          old.patches
+          ++ [
+            (pkgs.fetchpatch {
+              url = "https://github.com/Mic92/systemd/commit/93a2921a81cab3be9b7eacab6b0095c96a0ae9e2.patch";
+              sha256 = "sha256-7WlhMLE7sfD3Cxn6n6R1sUNzUOvas7XMyabi3bsq7jM=";
+            })
+          ];
+      });
 
       services.vault.agents.default.settings = {
         vault = {
@@ -117,6 +129,7 @@ in {
               config = {
                 role_id_file_path = "/tmp/roleID";
                 secret_id_file_path = "/tmp/secretID";
+                remove_secret_id_file_after_reading = false;
               };
             }
           ];
@@ -132,11 +145,24 @@ in {
       out = machine.succeed("cat /tmp/service1")
       print(out)
       assert out == "bar", f"{out} != bar"
-      out = machine.succeed("systemctl list-jobs")
+
+      out = machine.succeed("systemctl status service2")
       print(out)
-      assert "service2.service" in out, "service2 should be still blocked"
+      assert "(sd-mkdcreds)" in out, "service2 should be still blocked"
+
       machine.succeed("vault kv put secret/blocking-secret foo=bar")
-      machine.wait_for_unit("service2.service")
+      out = machine.wait_until_succeeds("cat /tmp/service2")
+      print(out)
+      assert out == "bar", f"{out} != bar"
+
+      machine.succeed("vault kv put secret/blocking-secret foo=reload")
+      machine.succeed("rm /run/systemd-vaultd/secrets/service2.service.json")
+      machine.succeed("systemctl restart vault-agent-default")
+      machine.wait_until_succeeds("cat /run/systemd-vaultd/secrets/service2.service.json >&2")
+      machine.succeed("systemctl reload service2")
+      out = machine.wait_until_succeeds("cat /tmp/service2-reload")
+      print(out)
+      assert out == "reload", f"{out} != reload"
     '';
   };
   unittests = makeTest' {
