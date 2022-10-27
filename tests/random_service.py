@@ -2,6 +2,7 @@
 
 import random
 import string
+import json
 from dataclasses import dataclass
 from pathlib import Path
 
@@ -16,10 +17,15 @@ class Service:
     secret_name: str
     secret_path: Path
 
+    def write_secret(self, val: str) -> None:
+        tmp = self.secret_path.with_name(self.secret_path.name + ".tmp")
+        tmp.write_text(json.dumps({self.secret_name: val}))
+        tmp.rename(self.secret_path)
+
 
 def random_service(secrets_dir: Path) -> Service:
     service = f"test-service-{rand_word(8)}.service"
     secret_name = "foo"
-    secret = f"{service}-{secret_name}"
+    secret = f"{service}.json"
     secret_path = secrets_dir / secret
     return Service(service, secret_name, secret_path)

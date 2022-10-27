@@ -34,6 +34,6 @@ def test_blocking_secret(systemd_vaultd: Path, command: Command, tempdir: Path) 
     )
     time.sleep(0.1)
     assert proc.poll() is None, "service should block for secret"
-    service.secret_path.write_text("foo")
+    service.write_secret("foo")
     assert proc.stdout is not None and proc.stdout.read() == "foo"
     assert proc.wait() == 0
