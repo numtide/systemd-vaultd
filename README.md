@@ -42,7 +42,7 @@ In order to do so, I wrote a `systemd-vaultd` service which acts as a proxy
 between systemd and vault agent that is running on the machine. It provides a
 unix socket that can be used in systemd services in the `LoadCredential`
 option and then waits for vault agent to write these secrets at
-`/run/systemd-vaultd/<service_name>-<secret_name>`.
+`/run/systemd-vaultd/<service_name>.json`.
 
 We take advantage that in addition to normal paths, systemd also supports
 loading credentials from unix sockets.
