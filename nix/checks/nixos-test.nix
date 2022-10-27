@@ -73,12 +73,12 @@ in {
       systemd.services.service1 = {
         wantedBy = ["multi-user.target"];
         script = ''
-          cat $CREDENTIALS_DIRECTORY/secret > /tmp/service1
+          cat $CREDENTIALS_DIRECTORY/foo > /tmp/service1
         '';
         serviceConfig = {
           Type = "oneshot";
           RemainAfterExit = true;
-          LoadCredential = ["secret:/run/systemd-vaultd/sock"];
+          LoadCredential = ["foo:/run/systemd-vaultd/sock"];
         };
       };
 
@@ -100,12 +100,17 @@ in {
         };
         template = [
           {
-            contents = ''{{ with secret "secret/my-secret" }}{{ .Data.data.foo }}{{ end }}'';
-            destination = "/run/systemd-vaultd/secrets/service1.service-secret";
+            contents = ''
+              {{ with secret "secret/my-secret" }}{{ .Data.data | toJSON }}{{ end }}
+            '';
+            destination = "/run/systemd-vaultd/secrets/service1.service.json";
           }
           {
-            contents = ''{{ with secret "secret/blocking-secret" }}{{ .Data.data.foo }}{{ end }}'';
-            destination = "/run/systemd-vaultd/secrets/service2.service-secret";
+            contents = ''
+              {{ with secret "secret/blocking-secret" }}{{ scratch.MapSet "secrets" "secret" .Data.data.foo }}{{ end }}
+              {{ scratch.Get "secrets" | explodeMap | toJSON }}
+            '';
+            destination = "/run/systemd-vaultd/secrets/service2.service.json";
           }
         ];
 
@@ -130,7 +135,7 @@ in {
       machine.wait_for_unit("service1.service")
       out = machine.succeed("cat /tmp/service1")
       print(out)
-      assert out == "bar"
+      assert out == "bar", f"{out} != bar"
       out = machine.succeed("systemctl list-jobs")
       print(out)
       assert "service2.service" in out, "service2 should be still blocked"

@@ -1,6 +1,7 @@
 package main
 
 import (
+	"errors"
 	"flag"
 	"fmt"
 	"io"
@@ -93,10 +94,10 @@ func (s *server) serveConnection(conn *net.UnixConn) {
 		return
 	}
 	log.Printf("Systemd requested secret for %s/%s", *unit, *secret)
-	secretName := *unit + "-" + *secret
+	secretName := *unit + ".json"
 	secretPath := filepath.Join(s.SecretDir, secretName)
-	f, err := os.Open(secretPath)
-	if os.IsNotExist(err) {
+	secretMap, err := parseServiceSecrets(secretPath)
+	if errors.Is(err, os.ErrNotExist) {
 		log.Printf("Block start until %s appears", secretPath)
 		shouldClose = false
 		fd, err := connFd(conn)
@@ -108,15 +109,19 @@ func (s *server) serveConnection(conn *net.UnixConn) {
 			log.Printf("Cannot get setup epoll for unix socket: %s", err)
 			return
 		}
-		s.inotifyRequests <- inotifyRequest{filename: secretName, conn: conn}
+		s.inotifyRequests <- inotifyRequest{filename: secretName, key: *secret, conn: conn}
 		return
 	} else if err != nil {
-		log.Printf("Cannot open secret %s/%s: %v", *unit, *secret, err)
+		log.Printf("Cannot process secret %s/%s: %v", *unit, *secret, err)
 		return
 	}
-	defer f.Close()
-	if _, err = io.Copy(conn, f); err != nil {
-		log.Printf("Failed to send secret: %v", err)
+	val, ok := secretMap[*secret]
+	if ok {
+		if _, err = io.WriteString(conn, val); err != nil {
+			log.Printf("Failed to send secret: %v", err)
+		}
+	} else {
+		log.Printf("Secret map at %s has no value for key %s", secretPath, *secret)
 	}
 }
 

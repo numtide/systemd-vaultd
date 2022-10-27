@@ -3,6 +3,11 @@
 > Mostly written in a train
 - Jörg Thalheim
 
+systemd-vaultd is a proxy between systemd and [vault agent](https://vaultproject.io). 
+It provides a unix socket that can be used in systemd services in the
+`LoadCredential` option and then waits for vault agent to write these secrets in
+json format at `/run/systemd-vaultd/<service_name>.service.json`.
+
 This project's goal is to simplify the loading of [HashiCorp
 Vault](https://www.vaultproject.io/) secrets from
 [systemd](https://systemd.io/) units.
@@ -50,19 +55,31 @@ ExecStart=/usr/bin/myservice.sh
 LoadCredential=foobar:/run/systemd-vaultd/sock
 ```
 
-vault agent is then expected to write secrets to `/run/systemd-vaultd/`
+vault agent is then expected to write secrets to `/run/systemd-vaultd/` in json format.
 
 ```
 template {
-  contents     = "{{ with secret \"secret/my-secret\" }}{{ .Data.data.foo }}{{ end }}"
-  destination  = "/run/systemd-vaultd/secrets/myservice.service-foo"
+  # this exposes all secrets in `secret/my-secret` to the service
+  contents = "#{{ with secret \"secret/my-secret\" }}{{ .Data.data | toJSON }}{{ end }}"
+  
+  # an alternative is to expose only selected secrets like this:
+  #  contents = <<EOF
+  #  {{ with secret "secret/my-secret" }}{{ scratch.MapSet "secrets" "foobar" .Data.data.foo }}{{ end }}
+  #  {{ scratch.Get "foobar" | explodeMap | toJSON }}
+  #  EOF
+  
+  destination  = "/run/systemd-vaultd/secrets/myservice.service.json"
 }
 ```
 
 When `myservice` is started, systemd will open a connection to
 `systemd-vaultd`'s socket.  `systemd-vaultd` then either serve the secrets
-from `/run/systemd-vaultd/secrets/myservice.service-foo` or it waits with
+from `/run/systemd-vaultd/secrets/myservice.service.json` or it waits with
 inotify on secret directory for vault agent to write the secret.
+
+Once the file `/run/systemd-vaultd/secrets/myservice.service.json` is present,
+systemd-vaultd will parse it into a json map and lookup the keys specified in
+`LoadCredential`.
 
 ⋈
 

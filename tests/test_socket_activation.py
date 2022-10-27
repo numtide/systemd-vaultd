@@ -34,7 +34,7 @@ def test_socket_activation(
         time.sleep(0.1)
 
     service = random_service(secrets_dir)
-    service.secret_path.write_text("foo")
+    service.write_secret("foo")
 
     # should not block
     out = run(

@@ -15,11 +15,13 @@ import (
 
 type inotifyRequest struct {
 	filename string
+	key      string
 	conn     *net.UnixConn
 }
 
 type connection struct {
 	fd         int
+	key        string
 	connection *net.UnixConn
 }
 
@@ -102,11 +104,11 @@ func (s *server) watch(inotifyFd int) {
 			fdToPath[fd] = req.filename
 			conns, ok := connsForPath[req.filename]
 			if ok {
-				connsForPath[req.filename] = append(conns, connection{fd, req.conn})
+				connsForPath[req.filename] = append(conns, connection{fd, req.key, req.conn})
 				continue
 			}
 
-			connsForPath[req.filename] = []connection{{fd, req.conn}}
+			connsForPath[req.filename] = []connection{{fd, req.key, req.conn}}
 		case fname, ok := <-fsEvents:
 			if !ok {
 				return
@@ -117,15 +119,22 @@ func (s *server) watch(inotifyFd int) {
 				continue
 			}
 			delete(connsForPath, fname)
+			secretMap, err := parseServiceSecrets(filepath.Join(s.SecretDir, fname))
+			if err != nil {
+				log.Printf("Failed to process service file: %v", err)
+				continue
+			}
 
 			for _, conn := range conns {
 				defer delete(fdToPath, conn.fd)
 
-				f, err := os.Open(filepath.Join(s.SecretDir, fname))
 				if err == nil {
-					defer f.Close()
-
-					_, err := io.Copy(conn.connection, f)
+					val, ok := secretMap[conn.key]
+					if !ok {
+						log.Printf("Secret map % has no value for key %s", fname, conn.key)
+						continue
+					}
+					_, err = io.WriteString(conn.connection, val)
 					if err == nil {
 						log.Printf("Served %s to %s", fname, conn.connection.RemoteAddr().String())
 					} else {
