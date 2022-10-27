@@ -117,7 +117,7 @@ func (s *server) serveConnection(conn *net.UnixConn) {
 	}
 	val, ok := secretMap[*secret]
 	if ok {
-		if _, err = io.WriteString(conn, val); err != nil {
+		if _, err = io.WriteString(conn, fmt.Sprint(val)); err != nil {
 			log.Printf("Failed to send secret: %v", err)
 		}
 	} else {
