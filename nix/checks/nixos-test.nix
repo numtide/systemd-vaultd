@@ -78,7 +78,12 @@ in {
         serviceConfig = {
           Type = "oneshot";
           RemainAfterExit = true;
-          LoadCredential = ["foo:/run/systemd-vaultd/sock"];
+        };
+        vault = {
+          template = ''
+            {{ with secret "secret/my-secret" }}{{ .Data.data | toJSON }}{{ end }}
+          '';
+          secrets.foo = {};
         };
       };
 
@@ -92,28 +97,19 @@ in {
           RemainAfterExit = true;
           LoadCredential = ["secret:/run/systemd-vaultd/sock"];
         };
+        vault = {
+          template = ''
+            {{ with secret "secret/blocking-secret" }}{{ scratch.MapSet "secrets" "secret" .Data.data.foo }}{{ end }}
+            {{ scratch.Get "secrets" | explodeMap | toJSON }}
+          '';
+          secrets.secret = {};
+        };
       };
 
-      services.vault.agents.test.settings = {
+      services.vault.agents.default.settings = {
         vault = {
           address = "http://localhost:8200";
         };
-        template = [
-          {
-            contents = ''
-              {{ with secret "secret/my-secret" }}{{ .Data.data | toJSON }}{{ end }}
-            '';
-            destination = "/run/systemd-vaultd/secrets/service1.service.json";
-          }
-          {
-            contents = ''
-              {{ with secret "secret/blocking-secret" }}{{ scratch.MapSet "secrets" "secret" .Data.data.foo }}{{ end }}
-              {{ scratch.Get "secrets" | explodeMap | toJSON }}
-            '';
-            destination = "/run/systemd-vaultd/secrets/service2.service.json";
-          }
-        ];
-
         auto_auth = {
           method = [
             {
