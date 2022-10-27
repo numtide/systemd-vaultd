@@ -57,10 +57,10 @@ in {
             description = "What to do if any secrets in the environment change.";
             type = lib.types.nullOr (lib.types.enum [
               "none"
-              "reload"
+              "reload-or-restart"
               "restart"
             ]);
-            default = "none";
+            default = "reload-or-restart";
           };
 
           template = lib.mkOption {
