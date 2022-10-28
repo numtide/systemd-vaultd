@@ -79,7 +79,22 @@ func parseCredentialsAddr(addr string) (*string, *string, error) {
 	return &fields[2], &fields[3], nil
 }
 
-func (s *server) serveConnection(conn *net.UnixConn) {
+func (s *server) queueInotifyRequest(conn *net.UnixConn, filename string, key string) error {
+	log.Printf("Block start until %s appears", filename)
+	fd, err := connFd(conn)
+	if err != nil {
+		// connection was closed while we trying to wait
+		return err
+	}
+	if err := s.epollWatch(fd); err != nil {
+		log.Printf("Cannot get setup epoll for unix socket: %s", err)
+		return err
+	}
+	s.inotifyRequests <- inotifyRequest{filename: filename, key: key, conn: conn}
+	return nil
+}
+
+func (s *server) serveServiceEnvironment(conn *net.UnixConn, unit string, secret string) {
 	shouldClose := true
 	defer func() {
 		if shouldClose {
@@ -87,41 +102,69 @@ func (s *server) serveConnection(conn *net.UnixConn) {
 		}
 	}()
 
-	addr := conn.RemoteAddr().String()
-	unit, secret, err := parseCredentialsAddr(addr)
-	if err != nil {
-		log.Printf("Received connection but remote unix address seems to be not from systemd: %v", err)
+	log.Printf("Systemd requested environment file for %s from %s", secret, unit)
+	secretPath := filepath.Join(s.SecretDir, secret)
+
+	f, err := os.Open(secretPath)
+	if errors.Is(err, os.ErrNotExist) {
+		if s.queueInotifyRequest(conn, secret, secret) == nil {
+			shouldClose = false
+		}
+		return
+	} else if err != nil {
+		log.Printf("Cannot open environment file %s/%s: %v", unit, secret, err)
 		return
 	}
-	log.Printf("Systemd requested secret for %s/%s", *unit, *secret)
-	secretName := *unit + ".json"
+	defer f.Close()
+	if _, err = io.Copy(conn, f); err != nil {
+		log.Printf("Failed to send environment file: %v", err)
+	}
+}
+
+func (s *server) serveServiceSecrets(conn *net.UnixConn, unit string, secret string) {
+	shouldClose := true
+	defer func() {
+		if shouldClose {
+			conn.Close()
+		}
+	}()
+
+	log.Printf("Systemd requested secret for %s/%s", unit, secret)
+	secretName := unit + ".json"
 	secretPath := filepath.Join(s.SecretDir, secretName)
 	secretMap, err := parseServiceSecrets(secretPath)
 	if errors.Is(err, os.ErrNotExist) {
-		log.Printf("Block start until %s appears", secretPath)
-		shouldClose = false
-		fd, err := connFd(conn)
-		if err != nil {
-			// connection was closed while we trying to wait
-			return
+		if s.queueInotifyRequest(conn, secretName, secret) == nil {
+			shouldClose = false
 		}
-		if err := s.epollWatch(fd); err != nil {
-			log.Printf("Cannot get setup epoll for unix socket: %s", err)
-			return
-		}
-		s.inotifyRequests <- inotifyRequest{filename: secretName, key: *secret, conn: conn}
 		return
 	} else if err != nil {
-		log.Printf("Cannot process secret %s/%s: %v", *unit, *secret, err)
+		log.Printf("Cannot process secret %s/%s: %v", unit, secret, err)
 		return
 	}
-	val, ok := secretMap[*secret]
+	val, ok := secretMap[secret]
 	if ok {
 		if _, err = io.WriteString(conn, fmt.Sprint(val)); err != nil {
 			log.Printf("Failed to send secret: %v", err)
 		}
 	} else {
-		log.Printf("Secret map at %s has no value for key %s", secretPath, *secret)
+		log.Printf("Secret map at %s has no value for key %s", secretPath, secret)
+	}
+}
+
+func (s *server) serveConnection(conn *net.UnixConn) {
+	addr := conn.RemoteAddr().String()
+	unit, secret, err := parseCredentialsAddr(addr)
+	if err != nil {
+		conn.Close()
+		log.Printf("Received connection but remote unix address seems to be not from systemd: %v", err)
+		return
+	}
+
+	if isEnvironmentFile(*secret) {
+		s.serveServiceEnvironment(conn, *unit, *secret)
+	} else {
+		s.serveServiceSecrets(conn, *unit, *secret)
 	}
 }
 

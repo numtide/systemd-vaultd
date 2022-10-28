@@ -28,7 +28,6 @@
         checks = let
           nixosTests = pkgs.callPackages ./nix/checks/nixos-test.nix {
             makeTest = import (pkgs.path + "/nixos/tests/make-test-python.nix");
-            inherit (self.nixosModules) vaultAgent systemdVaultd;
           };
         in {
           treefmt = pkgs.callPackage ./nix/checks/treefmt.nix {};

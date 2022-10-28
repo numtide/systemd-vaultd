@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"os"
+	"strings"
 )
 
 func parseServiceSecrets(path string) (map[string]interface{}, error) {
@@ -17,4 +18,8 @@ func parseServiceSecrets(path string) (map[string]interface{}, error) {
 		return nil, fmt.Errorf("Cannot parse '%s' as json file: %w", path, err)
 	}
 	return data, nil
+}
+
+func isEnvironmentFile(secret string) bool {
+	return strings.HasSuffix(secret, ".service.EnvironmentFile")
 }
