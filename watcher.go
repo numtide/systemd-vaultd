@@ -119,10 +119,23 @@ func (s *server) watch(inotifyFd int) {
 				continue
 			}
 			delete(connsForPath, fname)
-			secretMap, err := parseServiceSecrets(filepath.Join(s.SecretDir, fname))
-			if err != nil {
-				log.Printf("Failed to process service file: %v", err)
-				continue
+
+			var secretMap map[string]interface{}
+			var err error
+
+			if isEnvironmentFile(fname) {
+				content, err := os.ReadFile(filepath.Join(s.SecretDir, fname))
+				if err != nil {
+					log.Printf("Failed to process service file: %v", err)
+					continue
+				}
+				secretMap = map[string]interface{}{fname: string(content)}
+			} else {
+				secretMap, err = parseServiceSecrets(filepath.Join(s.SecretDir, fname))
+				if err != nil {
+					log.Printf("Failed to process service file: %v", err)
+					continue
+				}
 			}
 
 			for _, conn := range conns {
@@ -131,7 +144,7 @@ func (s *server) watch(inotifyFd int) {
 				if err == nil {
 					val, ok := secretMap[conn.key]
 					if !ok {
-						log.Printf("Secret map % has no value for key %s", fname, conn.key)
+						log.Printf("Secret map %s has no value for key %s", fname, conn.key)
 						continue
 					}
 					_, err = io.WriteString(conn.connection, fmt.Sprint(val))
