@@ -76,6 +76,11 @@ in {
       lib.nameValuePair "vault-agent-${name}" {
         after = ["network.target"];
         wantedBy = ["multi-user.target"];
+
+        # Services that also have `stopIfChanged = false` might wait for secrets
+        # while `vault-agent` is still stopped. This for example happens with nginx.service.
+
+        stopIfChanged = false;
         # Needs getent in PATH
         path = [pkgs.glibc];
         serviceConfig = {
