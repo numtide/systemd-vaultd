@@ -36,12 +36,13 @@
     systemd.services.service2 = {
       wantedBy = ["multi-user.target"];
       script = ''
-        cat $CREDENTIALS_DIRECTORY/secret > /tmp/service2
-        sleep infinity
+        set -x
+        while true; do
+          cat $CREDENTIALS_DIRECTORY/secret > /tmp/service2
+          sleep 0.1
+        done
       '';
-      reload = ''
-        cat $CREDENTIALS_DIRECTORY/secret > /tmp/service2-reload
-      '';
+      serviceConfig.ExecReload = "${pkgs.coreutils}/bin/true";
       serviceConfig.LoadCredential = ["secret:/run/systemd-vaultd/sock"];
       vault = {
         template = ''
@@ -109,7 +110,9 @@
     machine.succeed("systemctl restart vault-agent-default")
     machine.wait_until_succeeds("cat /run/systemd-vaultd/secrets/service2.service.json >&2")
     machine.succeed("systemctl reload service2")
-    out = machine.wait_until_succeeds("cat /tmp/service2-reload")
+
+    machine.succeed("rm /tmp/service2")
+    out = machine.wait_until_succeeds("cat /tmp/service2")
     print(out)
     assert out == "reload", f"{out} != reload"
   '';
