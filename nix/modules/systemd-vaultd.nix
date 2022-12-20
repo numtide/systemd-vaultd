@@ -10,6 +10,8 @@ in {
     ./vault-secrets.nix
   ];
 
+  systemd.package = pkgs.callPackage ../pkgs/systemd.nix {};
+
   systemd.sockets.systemd-vaultd = {
     description = "systemd-vaultd socket";
     wantedBy = ["sockets.target"];

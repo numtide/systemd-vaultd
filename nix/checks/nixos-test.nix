@@ -12,7 +12,11 @@ in {
   systemd-vaultd = makeTest' (import ./systemd-vaultd-test.nix);
   unittests = makeTest' {
     name = "unittests";
-    nodes.server = {};
+    nodes.server = {
+      imports = [
+        ../modules/systemd-vaultd.nix
+      ];
+    };
 
     testScript = ''
       start_all()
