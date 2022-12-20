@@ -2,16 +2,16 @@
   "nodes": {
     "flake-parts": {
       "inputs": {
-        "nixpkgs": [
+        "nixpkgs-lib": [
           "nixpkgs"
         ]
       },
       "locked": {
-        "lastModified": 1655570068,
-        "narHash": "sha256-KUSd2a6KgYTHd2l3Goee/P+DrAC6n1Tau+7V68czSZU=",
+        "lastModified": 1671322946,
+        "narHash": "sha256-J8Qj+ITV+eti+irTK9Zn2LZVYoIW2g7irPUckU8yZvU=",
         "owner": "hercules-ci",
         "repo": "flake-parts",
-        "rev": "6dbc77b9c0477f8a9a6a9081077bb38c6a3dbb3a",
+        "rev": "3f7172646953bf86dad5953bc45f0edae62ac445",
         "type": "github"
       },
       "original": {
@@ -22,16 +22,15 @@
     },
     "nixpkgs": {
       "locked": {
-        "lastModified": 1656938529,
-        "narHash": "sha256-j9hgKLoZZVYl/06Y2GzAhovGzfiuLzV5HX4kFEl+dTU=",
-        "owner": "Mic92",
+        "lastModified": 1671537075,
+        "narHash": "sha256-lAejYRUtM2SDTmHxcFLnx4W/P0URejhkl9DyqJ++PIc=",
+        "owner": "NixOS",
         "repo": "nixpkgs",
-        "rev": "5f6d0be096ef78b0fd38c3211d17117457193b69",
+        "rev": "eb37a7f66312e845fba0b3cc7c36e727012b3dae",
         "type": "github"
       },
       "original": {
-        "owner": "Mic92",
-        "ref": "vault",
+        "owner": "NixOS",
         "repo": "nixpkgs",
         "type": "github"
       }

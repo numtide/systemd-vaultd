@@ -3,17 +3,12 @@
 
   inputs = {
     flake-parts.url = "github:hercules-ci/flake-parts";
-    flake-parts.inputs.nixpkgs.follows = "nixpkgs";
-    # https://github.com/NixOS/nixpkgs/pull/180114
-    nixpkgs.url = "github:Mic92/nixpkgs/vault";
+    flake-parts.inputs.nixpkgs-lib.follows = "nixpkgs";
+    nixpkgs.url = "github:NixOS/nixpkgs";
   };
 
-  outputs = {
-    self,
-    flake-parts,
-    ...
-  }:
-    flake-parts.lib.mkFlake {inherit self;} {
+  outputs = inputs @ {flake-parts, ...}:
+    flake-parts.lib.mkFlake {inherit inputs;} {
       systems = ["x86_64-linux" "aarch64-linux"];
       perSystem = {
         config,
