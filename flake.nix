@@ -9,37 +9,34 @@
     treefmt-nix.url = "github:numtide/treefmt-nix";
   };
 
-  outputs = inputs @ {flake-parts, ...}:
-    flake-parts.lib.mkFlake {inherit inputs;} {
-      systems = ["x86_64-linux" "aarch64-linux"];
+  outputs = inputs @ { flake-parts, ... }:
+    flake-parts.lib.mkFlake { inherit inputs; } {
+      systems = [ "x86_64-linux" "aarch64-linux" ];
       imports = [
         ./nix/checks/flake-module.nix
       ];
-      perSystem = {
-        config,
-        self',
-        inputs',
-        pkgs,
-        system,
-        ...
-      }: {
-        packages.default = pkgs.callPackage ./default.nix {};
-        devShells.default = pkgs.mkShellNoCC {
-          buildInputs = with pkgs; [
-            python3.pkgs.pytest
-            python3.pkgs.mypy
+      perSystem =
+        { config
+        , pkgs
+        , ...
+        }: {
+          packages.default = pkgs.callPackage ./default.nix { };
+          devShells.default = pkgs.mkShellNoCC {
+            buildInputs = with pkgs; [
+              python3.pkgs.pytest
+              python3.pkgs.mypy
 
-            golangci-lint
-            vault
-            systemd
-            hivemind
-            go
-            just
-            config.packages.treefmt
-          ];
+              golangci-lint
+              vault
+              systemd
+              hivemind
+              go
+              just
+              config.packages.treefmt
+            ];
+          };
+
         };
-
-      };
       flake.nixosModules = {
         vaultAgent = ./nix/modules/vault-agent.nix;
         systemdVaultd = ./nix/modules/systemd-vaultd.nix;

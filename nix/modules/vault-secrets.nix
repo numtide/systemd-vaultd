@@ -1,11 +1,11 @@
-{
-  lib,
-  config,
-  pkgs,
-  ...
-}: let
+{ lib
+, config
+, pkgs
+, ...
+}:
+let
   secretType = serviceName:
-    lib.types.submodule ({config, ...}: {
+    lib.types.submodule ({ config, ... }: {
       options = {
         name = lib.mkOption {
           type = lib.types.str;
@@ -59,80 +59,85 @@
 
   vaultTemplates = config:
     (lib.mapAttrsToList
-      (serviceName: service:
+      (serviceName: _service:
         getSecretTemplate serviceName services.${serviceName}.vault)
-      (lib.filterAttrs (n: v: v.vault.secrets != {} && v.vault.agent == config._module.args.name) services))
+      (lib.filterAttrs (_n: v: v.vault.secrets != { } && v.vault.agent == config._module.args.name) services))
     ++ (lib.mapAttrsToList
-      (serviceName: service:
+      (serviceName: _service:
         getEnvironmentTemplate serviceName services.${serviceName}.vault)
-      (lib.filterAttrs (n: v: v.vault.environmentTemplate != null && v.vault.agent == config._module.args.name) services));
-in {
+      (lib.filterAttrs (_n: v: v.vault.environmentTemplate != null && v.vault.agent == config._module.args.name) services));
+in
+{
   options = {
     systemd.services = lib.mkOption {
-      type = lib.types.attrsOf (lib.types.submodule ({config, ...}: let
-        serviceName = config._module.args.name;
-      in {
-        options.vault = {
-          changeAction = lib.mkOption {
-            description = ''
-              What to do with the service if any secrets change
-            '';
-            type = lib.types.nullOr (lib.types.enum [
-              "none"
-              "reload-or-restart"
-              "restart"
-            ]);
-            default = "reload-or-restart";
-          };
+      type = lib.types.attrsOf (lib.types.submodule ({ config, ... }:
+        let
+          serviceName = config._module.args.name;
+        in
+        {
+          options.vault = {
+            changeAction = lib.mkOption {
+              description = ''
+                What to do with the service if any secrets change
+              '';
+              type = lib.types.nullOr (lib.types.enum [
+                "none"
+                "reload-or-restart"
+                "restart"
+              ]);
+              default = "reload-or-restart";
+            };
 
-          template = lib.mkOption {
-            type = lib.types.lines;
-            description = ''
-              The vault agent template to use for secrets
-            '';
-          };
+            template = lib.mkOption {
+              type = lib.types.lines;
+              description = ''
+                The vault agent template to use for secrets
+              '';
+            };
 
-          environmentTemplate = lib.mkOption {
-            type = lib.types.nullOr lib.types.lines;
-            default = null;
-            description = ''
-              The vault agent template to use for environment file
-            '';
-          };
+            environmentTemplate = lib.mkOption {
+              type = lib.types.nullOr lib.types.lines;
+              default = null;
+              description = ''
+                The vault agent template to use for environment file
+              '';
+            };
 
-          agent = lib.mkOption {
-            type = lib.types.str;
-            default = "default";
-            description = ''
-              Agent instance to use for this service
-            '';
-          };
+            agent = lib.mkOption {
+              type = lib.types.str;
+              default = "default";
+              description = ''
+                Agent instance to use for this service
+              '';
+            };
 
-          secrets = lib.mkOption {
-            type = lib.types.attrsOf (secretType serviceName);
-            default = {};
-            description = "List of secrets to load from vault agent template";
-            example = {
-              some-secret.template = ''{{ with secret "secret/some-secret" }}{{ .Data.data.some-key }}{{ end }}'';
+            secrets = lib.mkOption {
+              type = lib.types.attrsOf (secretType serviceName);
+              default = { };
+              description = "List of secrets to load from vault agent template";
+              example = {
+                some-secret.template = ''{{ with secret "secret/some-secret" }}{{ .Data.data.some-key }}{{ end }}'';
+              };
             };
           };
-        };
-        config = let
-          mkIfHasEnv = lib.mkIf (config.vault.environmentTemplate != null);
-        in {
-          after = mkIfHasEnv ["${serviceName}-envfile.service"];
-          bindsTo = mkIfHasEnv ["${serviceName}-envfile.service"];
+          config =
+            let
+              mkIfHasEnv = lib.mkIf (config.vault.environmentTemplate != null);
+            in
+            {
+              after = mkIfHasEnv [ "${serviceName}-envfile.service" ];
+              bindsTo = mkIfHasEnv [ "${serviceName}-envfile.service" ];
 
-          serviceConfig = {
-            LoadCredential = lib.mapAttrsToList (_: config: "${config.name}:/run/systemd-vaultd/sock") config.vault.secrets;
-            EnvironmentFile = mkIfHasEnv ["/run/systemd-vaultd/secrets/${serviceName}.service.EnvironmentFile"];
-          };
-        };
-      }));
+              serviceConfig = {
+                LoadCredential = lib.mapAttrsToList (_: config: "${config.name}:/run/systemd-vaultd/sock") config.vault.secrets;
+                EnvironmentFile = mkIfHasEnv [ "/run/systemd-vaultd/secrets/${serviceName}.service.EnvironmentFile" ];
+              };
+            };
+        }));
     };
 
     services.vault.agents = lib.mkOption {
-      type = lib.types.attrsOf (lib.types.submodule ({config, ...}: {
+      type = lib.types.attrsOf (lib.types.submodule ({ config, ... }: {
         config.settings.template = vaultTemplates config;
       }));
     };
@@ -140,14 +145,17 @@ in {
 
   config = {
     # we cannot use `systemd.services` here since this would create infinite recursion
-    systemd.packages = let
-      servicesWithEnv = builtins.attrNames (lib.filterAttrs (n: v: v.vault.environmentTemplate != null) services);
-    in [
-      (pkgs.runCommand "env-services" {}
-        (''
+    systemd.packages =
+      let
+        servicesWithEnv = builtins.attrNames (lib.filterAttrs (_n: v: v.vault.environmentTemplate != null) services);
+      in
+      [
+        (pkgs.runCommand "env-services" { }
+          (''
             mkdir -p $out/lib/systemd/system
           ''
-          + (lib.concatMapStringsSep "\n" (service: ''
+          + (lib.concatMapStringsSep "\n"
+            (service: ''
               cat > $out/lib/systemd/system/${service}-envfile.service <<EOF
               [Unit]
               Before=${service}.service
@@ -165,6 +173,6 @@ in {
               EOF
             '')
             servicesWithEnv)))
-    ];
+      ];
   };
 }

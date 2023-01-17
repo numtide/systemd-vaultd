@@ -1,10 +1,8 @@
-{
-  config,
-  lib,
-  pkgs,
-  ...
+{ config
+, pkgs
+, ...
 }: {
-  environment.systemPackages = [pkgs.vault];
+  environment.systemPackages = [ pkgs.vault ];
   services.vault = {
     enable = true;
     dev = true;
@@ -14,8 +12,8 @@
   environment.variables.VAULT_TOKEN = config.services.vault.devRootTokenID;
 
   systemd.services.setup-vault-agent-approle = {
-    path = [pkgs.jq pkgs.vault pkgs.systemd];
-    wantedBy = ["multi-user.target"];
+    path = [ pkgs.jq pkgs.vault pkgs.systemd ];
+    wantedBy = [ "multi-user.target" ];
 
     serviceConfig = {
       Type = "oneshot";
@@ -51,7 +49,7 @@
 
   # Make sure our setup service is started before our vault-agent
   systemd.services.vault-agent-test = {
-    wants = ["setup-vault-agent-approle.service"];
-    after = ["setup-vault-agent-approle.service"];
+    wants = [ "setup-vault-agent-approle.service" ];
+    after = [ "setup-vault-agent-approle.service" ];
   };
 }

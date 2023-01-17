@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
 
+import json
 import random
 import string
-import json
 from dataclasses import dataclass
 from pathlib import Path
 

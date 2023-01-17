@@ -1,13 +1,15 @@
-{
-  makeTest ? import <nixpkgs/nixos/tests/make-test-python.nix>,
-  pkgs ? (import <nixpkgs> {}),
-}: let
+{ makeTest ? import <nixpkgs/nixos/tests/make-test-python.nix>
+, pkgs ? (import <nixpkgs> { })
+,
+}:
+let
   makeTest' = args:
     makeTest args {
       inherit pkgs;
       inherit (pkgs) system;
     };
-in {
+in
+{
   vault-agent = makeTest' (import ./vault-agent-test.nix);
   systemd-vaultd = makeTest' (import ./systemd-vaultd-test.nix);
   unittests = makeTest' {

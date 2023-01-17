@@ -1,9 +1,10 @@
 # systemd-vaultd - load vault credentials with systemd units
 
 > Mostly written in a train
+
 - Jörg Thalheim
 
-systemd-vaultd is a proxy between systemd and [vault agent](https://vaultproject.io). 
+systemd-vaultd is a proxy between systemd and [vault agent](https://vaultproject.io).
 It provides a unix socket that can be used in systemd services in the
 `LoadCredential` option and then waits for vault agent to write these secrets in
 json format at `/run/systemd-vaultd/<service_name>.service.json`.
@@ -61,19 +62,19 @@ vault agent is then expected to write secrets to `/run/systemd-vaultd/` in json 
 template {
   # this exposes all secrets in `secret/my-secret` to the service
   contents = "#{{ with secret \"secret/my-secret\" }}{{ .Data.data | toJSON }}{{ end }}"
-  
+
   # an alternative is to expose only selected secrets like this:
   #  contents = <<EOF
   #  {{ with secret "secret/my-secret" }}{{ scratch.MapSet "secrets" "foobar" .Data.data.foo }}{{ end }}
   #  {{ scratch.Get "foobar" | explodeMap | toJSON }}
   #  EOF
-  
+
   destination  = "/run/systemd-vaultd/secrets/myservice.service.json"
 }
 ```
 
 When `myservice` is started, systemd will open a connection to
-`systemd-vaultd`'s socket.  `systemd-vaultd` then either serve the secrets
+`systemd-vaultd`'s socket. `systemd-vaultd` then either serve the secrets
 from `/run/systemd-vaultd/secrets/myservice.service.json` or it waits with
 inotify on secret directory for vault agent to write the secret.
 

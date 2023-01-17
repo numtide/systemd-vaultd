@@ -1,76 +1,76 @@
 {
   name = "systemd-vaultd";
-  nodes.server = {
-    config,
-    pkgs,
-    ...
-  }: {
-    imports = [
-      ../modules/vault-agent.nix
-      ../modules/systemd-vaultd.nix
-      ./dev-vault-server.nix
-    ];
+  nodes.server =
+    { config
+    , pkgs
+    , ...
+    }: {
+      imports = [
+        ../modules/vault-agent.nix
+        ../modules/systemd-vaultd.nix
+        ./dev-vault-server.nix
+      ];
 
-    systemd.services.service1 = {
-      wantedBy = ["multi-user.target"];
-      script = ''
-        cat $CREDENTIALS_DIRECTORY/foo > /tmp/service1
-        echo -n "$SECRET_ENV" > /tmp/service1-env
-      '';
-      #serviceConfig = {
-      #  EnvironmentFile = [ "/run/systemd-vaultd/service1.service.EnvironmentFile" ];
-      #};
-      vault = {
-        template = ''
-          {{ with secret "secret/my-secret" }}{{ .Data.data | toJSON }}{{ end }}
+      systemd.services.service1 = {
+        wantedBy = [ "multi-user.target" ];
+        script = ''
+          cat $CREDENTIALS_DIRECTORY/foo > /tmp/service1
+          echo -n "$SECRET_ENV" > /tmp/service1-env
         '';
-        secrets.foo = {};
-        environmentTemplate = ''
-          {{ with secret "secret/my-secret" }}
-          SECRET_ENV={{ .Data.data.foo }}
-          {{ end }}
+        #serviceConfig = {
+        #  EnvironmentFile = [ "/run/systemd-vaultd/service1.service.EnvironmentFile" ];
+        #};
+        vault = {
+          template = ''
+            {{ with secret "secret/my-secret" }}{{ .Data.data | toJSON }}{{ end }}
+          '';
+          secrets.foo = { };
+          environmentTemplate = ''
+            {{ with secret "secret/my-secret" }}
+            SECRET_ENV={{ .Data.data.foo }}
+            {{ end }}
+          '';
+        };
+      };
+
+      systemd.services.service2 = {
+        wantedBy = [ "multi-user.target" ];
+        script = ''
+          set -x
+          while true; do
+            cat $CREDENTIALS_DIRECTORY/secret > /tmp/service2
+            sleep 0.1
+          done
         '';
+        serviceConfig.ExecReload = "${pkgs.coreutils}/bin/true";
+        serviceConfig.LoadCredential = [ "secret:/run/systemd-vaultd/sock" ];
+        vault = {
+          template = ''
+            {{ with secret "secret/blocking-secret" }}{{ scratch.MapSet "secrets" "secret" .Data.data.foo }}{{ end }}
+            {{ scratch.Get "secrets" | explodeMap | toJSON }}
+          '';
+          secrets.secret = { };
+        };
+      };
+
+      services.vault.agents.default.settings = {
+        vault = {
+          address = "http://localhost:8200";
+        };
+        auto_auth = {
+          method = [
+            {
+              type = "approle";
+              config = {
+                role_id_file_path = "/tmp/roleID";
+                secret_id_file_path = "/tmp/secretID";
+                remove_secret_id_file_after_reading = false;
+              };
+            }
+          ];
+        };
       };
     };
-
-    systemd.services.service2 = {
-      wantedBy = ["multi-user.target"];
-      script = ''
-        set -x
-        while true; do
-          cat $CREDENTIALS_DIRECTORY/secret > /tmp/service2
-          sleep 0.1
-        done
-      '';
-      serviceConfig.ExecReload = "${pkgs.coreutils}/bin/true";
-      serviceConfig.LoadCredential = ["secret:/run/systemd-vaultd/sock"];
-      vault = {
-        template = ''
-          {{ with secret "secret/blocking-secret" }}{{ scratch.MapSet "secrets" "secret" .Data.data.foo }}{{ end }}
-          {{ scratch.Get "secrets" | explodeMap | toJSON }}
-        '';
-        secrets.secret = {};
-      };
-    };
-
-    services.vault.agents.default.settings = {
-      vault = {
-        address = "http://localhost:8200";
-      };
-      auto_auth = {
-        method = [
-          {
-            type = "approle";
-            config = {
-              role_id_file_path = "/tmp/roleID";
-              secret_id_file_path = "/tmp/secretID";
-              remove_secret_id_file_after_reading = false;
-            };
-          }
-        ];
-      };
-    };
-  };
   testScript = ''
     start_all()
     machine.wait_for_unit("vault.service")
