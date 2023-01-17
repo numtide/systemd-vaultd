@@ -1,11 +1,11 @@
-{
-  config,
-  lib,
-  pkgs,
-  ...
-}: let
+{ config
+, lib
+, pkgs
+, ...
+}:
+let
   cfg = config.services.vault;
-  settingsFormat = pkgs.formats.json {};
+  settingsFormat = pkgs.formats.json { };
 
   autoAuthMethodModule = lib.types.submodule {
     freeformType = lib.types.attrsOf lib.types.unspecified;
@@ -27,7 +27,7 @@
     options = {
       method = lib.mkOption {
         type = lib.types.listOf autoAuthMethodModule;
-        default = [];
+        default = [ ];
       };
     };
   };
@@ -49,18 +49,19 @@
     options = {
       auto_auth = lib.mkOption {
         type = autoAuthModule;
-        default = {};
+        default = { };
       };
 
       template_config = lib.mkOption {
         type = templateConfigModule;
-        default = {};
+        default = { };
       };
     };
   };
-in {
+in
+{
   options.services.vault.agents = lib.mkOption {
-    default = {};
+    default = { };
     description = "Instances of vault agent";
     type = lib.types.attrsOf (lib.types.submodule {
       options = {
@@ -72,22 +73,23 @@ in {
     });
   };
   config = {
-    systemd.services = lib.mapAttrs' (name: instanceCfg:
-      lib.nameValuePair "vault-agent-${name}" {
-        after = ["network.target"];
-        wantedBy = ["multi-user.target"];
+    systemd.services = lib.mapAttrs'
+      (name: instanceCfg:
+        lib.nameValuePair "vault-agent-${name}" {
+          after = [ "network.target" ];
+          wantedBy = [ "multi-user.target" ];
 
-        # Services that also have `stopIfChanged = false` might wait for secrets
-        # while `vault-agent` is still stopped. This for example happens with nginx.service.
+          # Services that also have `stopIfChanged = false` might wait for secrets
+          # while `vault-agent` is still stopped. This for example happens with nginx.service.
 
-        stopIfChanged = false;
-        # Needs getent in PATH
-        path = [pkgs.glibc];
-        serviceConfig = {
-          Restart = "on-failure";
-          ExecStart = "${pkgs.vault}/bin/vault agent -config=${settingsFormat.generate "agent.json" instanceCfg.settings}";
-        };
-      })
-    cfg.agents;
+          stopIfChanged = false;
+          # Needs getent in PATH
+          path = [ pkgs.glibc ];
+          serviceConfig = {
+            Restart = "on-failure";
+            ExecStart = "${pkgs.vault}/bin/vault agent -config=${settingsFormat.generate "agent.json" instanceCfg.settings}";
+          };
+        })
+      cfg.agents;
   };
 }

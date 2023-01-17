@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 
-import time
 import subprocess
+import time
 from pathlib import Path
 
 from command import Command, run

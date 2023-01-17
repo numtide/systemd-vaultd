@@ -1,9 +1,10 @@
 #!/usr/bin/env python3
 
 import os
-import pytest
 from pathlib import Path
 from typing import Optional
+
+import pytest
 from command import run
 
 BIN: Optional[Path] = None

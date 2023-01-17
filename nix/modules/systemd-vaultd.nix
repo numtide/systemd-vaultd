@@ -1,20 +1,19 @@
+{ pkgs
+, ...
+}:
+let
+  systemd-vaultd = pkgs.callPackage ../../default.nix { };
+in
 {
-  config,
-  lib,
-  pkgs,
-  ...
-}: let
-  systemd-vaultd = pkgs.callPackage ../../default.nix {};
-in {
   imports = [
     ./vault-secrets.nix
   ];
 
-  systemd.package = pkgs.callPackage ../pkgs/systemd.nix {};
+  systemd.package = pkgs.callPackage ../pkgs/systemd.nix { };
 
   systemd.sockets.systemd-vaultd = {
     description = "systemd-vaultd socket";
-    wantedBy = ["sockets.target"];
+    wantedBy = [ "sockets.target" ];
 
     socketConfig = {
       ListenStream = "/run/systemd-vaultd/sock";
@@ -24,8 +23,8 @@ in {
   };
   systemd.services.systemd-vaultd = {
     description = "systemd-vaultd daemon";
-    requires = ["systemd-vaultd.socket"];
-    after = ["systemd-vaultd.socket"];
+    requires = [ "systemd-vaultd.socket" ];
+    after = [ "systemd-vaultd.socket" ];
     # Restarting can break services waiting for secrets
     stopIfChanged = false;
     serviceConfig = {

@@ -3,8 +3,8 @@
 import os
 import signal
 import subprocess
-from typing import IO, Any, Dict, Iterator, List, Union
 from pathlib import Path
+from typing import IO, Any, Dict, Iterator, List, Union
 
 import pytest
 

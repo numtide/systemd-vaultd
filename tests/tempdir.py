@@ -1,9 +1,10 @@
 #!/usr/bin/env python3
 
-import pytest
-from tempfile import TemporaryDirectory
 from pathlib import Path
+from tempfile import TemporaryDirectory
 from typing import Iterator
+
+import pytest
 
 
 @pytest.fixture

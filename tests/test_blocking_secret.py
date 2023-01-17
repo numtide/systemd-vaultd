@@ -1,6 +1,6 @@
 import subprocess
-from pathlib import Path
 import time
+from pathlib import Path
 
 from command import Command
 from random_service import random_service

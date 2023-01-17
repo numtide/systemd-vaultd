@@ -1,6 +1,6 @@
-{
-  systemd,
-  fetchpatch,
+{ systemd
+, fetchpatch
+,
 }:
 systemd.overrideAttrs (old: {
   patches =

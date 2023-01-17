@@ -1,38 +1,37 @@
 {
   name = "vault-agent";
-  nodes.server = {
-    config,
-    pkgs,
-    ...
-  }: {
-    imports = [
-      ./dev-vault-server.nix
-      ../modules/vault-agent.nix
-    ];
+  nodes.server =
+    { config
+    , ...
+    }: {
+      imports = [
+        ./dev-vault-server.nix
+        ../modules/vault-agent.nix
+      ];
 
-    services.vault.agents.test.settings = {
-      vault = {
-        address = "http://localhost:8200";
-      };
-      template = {
-        contents = ''{{ with secret "secret/my-secret" }}{{ .Data.data.foo }}{{ end }}'';
-        destination = "/run/render.txt";
-      };
+      services.vault.agents.test.settings = {
+        vault = {
+          address = "http://localhost:8200";
+        };
+        template = {
+          contents = ''{{ with secret "secret/my-secret" }}{{ .Data.data.foo }}{{ end }}'';
+          destination = "/run/render.txt";
+        };
 
-      auto_auth = {
-        method = [
-          {
-            type = "approle";
-            config = {
-              role_id_file_path = "/tmp/roleID";
-              secret_id_file_path = "/tmp/secretID";
-              remove_secret_id_file_after_reading = false;
-            };
-          }
-        ];
+        auto_auth = {
+          method = [
+            {
+              type = "approle";
+              config = {
+                role_id_file_path = "/tmp/roleID";
+                secret_id_file_path = "/tmp/secretID";
+                remove_secret_id_file_after_reading = false;
+              };
+            }
+          ];
+        };
       };
     };
-  };
   testScript = ''
     start_all()
     machine.wait_for_unit("multi-user.target")
