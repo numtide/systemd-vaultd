@@ -1,7 +1,10 @@
 cut_body_after = "" # don't include text from the PR body in the merge commit message
 status = [
- "Evaluate flake.nix",
- "package %",
- "check %",
- "devShell %",
+  "Evaluate flake.nix",
+  "check systemd-vaultd [x86_64-linux]",
+  "check treefmt [x86_64-linux]",
+  "check unittests [x86_64-linux]",
+  "check vault-agent [x86_64-linux]",
+  "devShell default [x86_64-linux]",
+  "package default [x86_64-linux]"
 ]
