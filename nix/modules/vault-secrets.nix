@@ -35,7 +35,7 @@ let
       destination = "/run/systemd-vaultd/secrets/${serviceName}.service.json";
       perms = "0400";
     }
-    // lib.optionalAttrs (vaultConfig.changeAction != null) {
+    // lib.optionalAttrs (vaultConfig.changeAction != null && vaultConfig.changeAction != "none") {
       command = "systemctl ${
         if vaultConfig.changeAction == "restart"
         then "try-restart"
