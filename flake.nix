@@ -33,7 +33,7 @@
               hivemind
               go
               just
-              config.packages.treefmt
+              config.treefmt.build.wrapper
               config.packages.systemd
             ];
           };
