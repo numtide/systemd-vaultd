@@ -79,11 +79,11 @@
 
     out = machine.wait_until_succeeds("cat /tmp/service1")
     print(out)
-    assert out == "bar", f"{out} != bar"
+    assert out == "bar", f"{out} != bar for service1"
 
     out = machine.succeed("cat /tmp/service1-env")
     print(out)
-    assert out == "bar", f"{out} != bar"
+    assert out == "bar", f"{out} != bar for service1-env"
 
     out = machine.succeed("systemctl status service2")
     print(out)
@@ -92,7 +92,7 @@
     machine.succeed("vault kv put secret/blocking-secret foo=bar")
     out = machine.wait_until_succeeds("cat /tmp/service2")
     print(out)
-    assert out == "bar", f"{out} != bar"
+    assert out == "bar", f"{out} != bar for service2"
 
     machine.succeed("vault kv put secret/blocking-secret foo=reload")
     machine.succeed("rm /run/systemd-vaultd/secrets/service2.service.json")
@@ -103,6 +103,6 @@
     machine.succeed("rm /tmp/service2")
     out = machine.wait_until_succeeds("cat /tmp/service2")
     print(out)
-    assert out == "reload", f"{out} != reload"
+    assert out == "reload", f"{out} != reload for service2"
   '';
 }
