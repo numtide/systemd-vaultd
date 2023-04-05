@@ -3,11 +3,10 @@
 , pkgs
 , lib
 , coreutils
-,
+, systemd
 }:
 let
   systemd-vaultd = pkgs.callPackage ../../default.nix { };
-  systemd = pkgs.callPackage ../pkgs/systemd.nix { };
 in
 writeShellScript "unittests" ''
   set -eu -o pipefail

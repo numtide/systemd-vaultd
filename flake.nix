@@ -22,7 +22,6 @@
         , ...
         }: {
           packages.default = pkgs.callPackage ./default.nix { };
-          packages.systemd = pkgs.callPackage ./nix/pkgs/systemd.nix { };
           devShells.default = pkgs.mkShellNoCC {
             buildInputs = with pkgs; [
               python3.pkgs.pytest
@@ -35,7 +34,6 @@
               go
               just
               config.treefmt.build.wrapper
-              config.packages.systemd
             ];
           };
 
