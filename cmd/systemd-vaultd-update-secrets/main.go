@@ -3,6 +3,7 @@ package main
 import (
 	"encoding/json"
 	"fmt"
+	"log"
 	"os"
 	"path"
 	"syscall"
@@ -26,6 +27,24 @@ func updateSecrets(serviceName, target string) error {
 	jsonPath := path.Join(systemdVaultdir, fmt.Sprintf("%s.json", serviceName))
 	var content []byte
 	for i := 0; i < 10; i++ {
+		jsonStat, err := os.Stat(jsonPath)
+		if err != nil {
+			if os.IsNotExist(err) {
+				// wait for the file to be created
+				fmt.Printf("waiting for %s to be created", jsonPath)
+				time.Sleep(1 * time.Second)
+				continue
+			}
+			return fmt.Errorf("failed to stat vault json file %s: %w", serviceName, err)
+		}
+
+		if jsonStat.ModTime().Before(stat.ModTime()) {
+			// wait for the file to be updated
+			fmt.Printf("waiting for %s to be updated", jsonPath)
+			time.Sleep(1 * time.Second)
+			continue
+		}
+
 		content, err = os.ReadFile(jsonPath)
 		if err != nil {
 			if os.IsNotExist(err) {
@@ -44,13 +63,23 @@ func updateSecrets(serviceName, target string) error {
 	}
 	for key, value := range data {
 		targetPath := path.Join(target, key)
-		os.Chown(path.Dir(targetPath), int(uid), int(gid))
-
+		tempPath := targetPath + ".tmp"
+		err = os.WriteFile(tempPath, []byte(value.(string)), 0o400)
 		if err != nil {
-			return fmt.Errorf("failed to create directory %s: %w", path.Dir(targetPath), err)
+			return fmt.Errorf("failed to write file %s: %w", targetPath, err)
 		}
-		os.WriteFile(targetPath, []byte(value.(string)), 0o400)
-		os.Chown(targetPath, int(uid), int(gid))
+		err = os.Chown(tempPath, int(uid), int(gid))
+		if err != nil {
+			return fmt.Errorf("failed to chown file %s: %w", targetPath, err)
+		}
+		err = os.Rename(tempPath, targetPath)
+		if err != nil {
+			return fmt.Errorf("failed to rename file %s: %w", targetPath, err)
+		}
+	}
+	err = os.Chtimes(target, time.Now(), time.Now())
+	if err != nil {
+		log.Printf("failed to update modification time of %s: %v", target, err)
 	}
 
 	return nil
