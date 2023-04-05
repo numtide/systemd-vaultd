@@ -32,16 +32,16 @@ func updateSecrets(serviceName, target string) error {
 		if err != nil {
 			if os.IsNotExist(err) {
 				// wait for the file to be created
-				fmt.Printf("waiting for %s to be created", jsonPath)
+				log.Printf("waiting for %s to be created", jsonPath)
 				time.Sleep(1 * time.Second)
 				continue
 			}
 			return fmt.Errorf("failed to stat vault json file %s: %w", serviceName, err)
 		}
 
-		if jsonStat.ModTime().Before(stat.ModTime()) {
+		if jsonStat.ModTime().Before(stat.ModTime()) && i < 9 {
 			// wait for the file to be updated
-			fmt.Printf("waiting for %s to be updated", jsonPath)
+			log.Printf("waiting for %s to be updated", jsonPath)
 			time.Sleep(1 * time.Second)
 			continue
 		}
@@ -50,7 +50,7 @@ func updateSecrets(serviceName, target string) error {
 		if err != nil {
 			if os.IsNotExist(err) {
 				// wait for the file to be created
-				fmt.Printf("waiting for %s to be created", jsonPath)
+				log.Printf("waiting for %s to be created", jsonPath)
 				time.Sleep(1 * time.Second)
 				continue
 			}
