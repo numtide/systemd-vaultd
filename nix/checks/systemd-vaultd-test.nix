@@ -94,6 +94,7 @@
     machine.wait_for_unit("vault.service")
     machine.wait_for_open_port(8200)
     machine.wait_for_unit("setup-vault-agent-approle.service")
+    machine.wait_for_unit("vault-agent-default.service")
 
     out = machine.wait_until_succeeds("grep -q bar /tmp/service1")
 
