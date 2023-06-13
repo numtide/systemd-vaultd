@@ -29,19 +29,28 @@ let
 
   services = config.systemd.services;
 
+  templateExec = serviceName: vaultConfig: { } //
+    lib.optionalAttrs (vaultConfig.changeAction != null && vaultConfig.changeAction != "none") {
+      exec = [
+        ({
+          command = "systemctl ${
+        if vaultConfig.changeAction == "restart"
+        then "try-restart"
+        else "try-reload-or-restart"
+      } ${lib.escapeShellArg "${serviceName}.service"}";
+        } // lib.optionalAttrs
+          (vaultConfig.command_timeout != null)
+          { timeout = vaultConfig.command_timeout; })
+      ];
+    };
+
   getSecretTemplate = serviceName: vaultConfig:
     {
       contents = vaultConfig.template;
       destination = "/run/systemd-vaultd/secrets/${serviceName}.service.json";
       perms = "0400";
     }
-    // lib.optionalAttrs (vaultConfig.changeAction != null && vaultConfig.changeAction != "none") {
-      command = "systemctl ${
-        if vaultConfig.changeAction == "restart"
-        then "try-restart"
-        else "try-reload-or-restart"
-      } ${lib.escapeShellArg "${serviceName}.service"}";
-    };
+    // templateExec serviceName vaultConfig;
 
   getEnvironmentTemplate = serviceName: vaultConfig:
     {
@@ -49,13 +58,7 @@ let
       destination = "/run/systemd-vaultd/secrets/${serviceName}.service.EnvironmentFile";
       perms = "0400";
     }
-    // lib.optionalAttrs (vaultConfig.changeAction != null) {
-      command = "systemctl ${
-        if vaultConfig.changeAction == "restart"
-        then "try-restart"
-        else "try-reload-or-restart"
-      } ${lib.escapeShellArg "${serviceName}.service"}";
-    };
+    // templateExec serviceName vaultConfig;
 
   vaultTemplates = config:
     (lib.mapAttrsToList
@@ -119,6 +122,15 @@ in
                 some-secret.template = ''{{ with secret "secret/some-secret" }}{{ .Data.data.some-key }}{{ end }}'';
               };
             };
+
+            command_timeout = lib.mkOption {
+              type = lib.types.nullOr lib.types.str;
+              default = null;
+              description = ''
+                Maximum amount of time to wait for the optional command to return.
+              '';
+            };
+
           };
           config =
             let
