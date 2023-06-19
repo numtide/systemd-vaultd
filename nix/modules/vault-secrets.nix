@@ -64,7 +64,7 @@ let
     (lib.mapAttrsToList
       (serviceName: _service:
         getSecretTemplate serviceName services.${serviceName}.vault)
-      (lib.filterAttrs (_n: v: v.vault.secrets != { } && v.vault.agent == config._module.args.name) services))
+      (lib.filterAttrs (_n: v: v.vault.template != null && v.vault.agent == config._module.args.name) services))
     ++ (lib.mapAttrsToList
       (serviceName: _service:
         getEnvironmentTemplate serviceName services.${serviceName}.vault)
@@ -92,7 +92,8 @@ in
             };
 
             template = lib.mkOption {
-              type = lib.types.lines;
+              type = lib.types.nullOr lib.types.lines;
+              default = null;
               description = ''
                 The vault agent template to use for secrets
               '';
@@ -135,13 +136,14 @@ in
           config =
             let
               mkIfHasEnv = lib.mkIf (config.vault.environmentTemplate != null);
+              mkIfHasSecret = lib.mkIf (config.vault.template != null);
             in
             {
               after = mkIfHasEnv [ "${serviceName}-envfile.service" ];
               bindsTo = mkIfHasEnv [ "${serviceName}-envfile.service" ];
 
               serviceConfig = {
-                LoadCredential = lib.mapAttrsToList (_: config: "${config.name}:/run/systemd-vaultd/sock") config.vault.secrets;
+                LoadCredential = mkIfHasSecret (lib.mapAttrsToList (_: config: "${config.name}:/run/systemd-vaultd/sock") config.vault.secrets);
                 EnvironmentFile = mkIfHasEnv [ "/run/systemd-vaultd/secrets/${serviceName}.service.EnvironmentFile" ];
               };
             };
