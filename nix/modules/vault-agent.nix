@@ -84,7 +84,7 @@ in
 
           stopIfChanged = false;
           # Needs getent in PATH
-          path = [ pkgs.glibc ];
+          path = [ pkgs.getent ];
           serviceConfig = {
             Restart = "on-failure";
             ExecStart = "${pkgs.vault}/bin/vault agent -config=${settingsFormat.generate "agent.json" instanceCfg.settings}";
