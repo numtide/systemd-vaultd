@@ -76,7 +76,7 @@ in
     systemd.services = lib.mapAttrs'
       (name: instanceCfg:
         lib.nameValuePair "vault-agent-${name}" {
-          after = [ "network.target" ];
+          after = [ "network-online.target" ];
           wantedBy = [ "multi-user.target" ];
 
           # Services that also have `stopIfChanged = false` might wait for secrets

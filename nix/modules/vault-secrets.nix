@@ -175,12 +175,15 @@ in
               Before=${service}.service
               BindsTo=${service}.service
               StopPropagatedFrom=${service}.service
+              After=network-online.target
 
               [Service]
               Type=oneshot
               ExecStart=${pkgs.coreutils}/bin/true
               RemainAfterExit=true
               LoadCredential=${service}.service.EnvironmentFile:/run/systemd-vaultd/sock
+              Restart=on-failure
+              RestartSec=3
 
               [Install]
               WantedBy=${service}.service
