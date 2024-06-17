@@ -175,6 +175,8 @@ in
               Before=${service}.service
               BindsTo=${service}.service
               StopPropagatedFrom=${service}.service
+              After=systemd-vaultd.socket
+              Requires=systemd-vaultd.socket
 
               [Service]
               Type=oneshot
