@@ -28,6 +28,7 @@
               python3.pkgs.mypy
 
               golangci-lint
+              jq
               vault
               systemd
               hivemind
