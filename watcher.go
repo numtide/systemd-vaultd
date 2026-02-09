@@ -11,6 +11,8 @@ import (
 	"strings"
 	"syscall"
 	"unsafe"
+
+	"github.com/numtide/systemd-vaultd/internal"
 )
 
 type inotifyRequest struct {
@@ -123,7 +125,7 @@ func (s *server) watch(inotifyFd int) {
 			var secretMap map[string]interface{}
 			var err error
 
-			if isEnvironmentFile(fname) {
+			if internal.IsEnvironmentFile(fname) {
 				content, err := os.ReadFile(filepath.Join(s.SecretDir, fname))
 				if err != nil {
 					log.Printf("Failed to process service file: %v", err)
@@ -131,7 +133,7 @@ func (s *server) watch(inotifyFd int) {
 				}
 				secretMap = map[string]interface{}{fname: string(content)}
 			} else {
-				secretMap, err = parseServiceSecrets(filepath.Join(s.SecretDir, fname))
+				secretMap, err = internal.ParseServiceSecrets(filepath.Join(s.SecretDir, fname))
 				if err != nil {
 					log.Printf("Failed to process service file: %v", err)
 					continue
@@ -147,7 +149,12 @@ func (s *server) watch(inotifyFd int) {
 						log.Printf("Secret map %s has no value for key %s", fname, conn.key)
 						continue
 					}
-					_, err = io.WriteString(conn.connection, fmt.Sprint(val))
+					switch val.(type) {
+					case []byte:
+						_, err = conn.connection.Write(val.([]byte))
+					default:
+						_, err = io.WriteString(conn.connection, fmt.Sprint(val))
+					}
 					if err == nil {
 						log.Printf("Served %s to %s", fname, conn.connection.RemoteAddr().String())
 					} else {
