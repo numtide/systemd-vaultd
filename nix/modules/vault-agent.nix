@@ -87,7 +87,7 @@ in
           path = [ pkgs.getent ];
           serviceConfig = {
             Restart = "on-failure";
-            ExecStart = "${pkgs.vault}/bin/vault agent -config=${settingsFormat.generate "agent.json" instanceCfg.settings}";
+            ExecStart = "${lib.getExe cfg.package} agent -config=${settingsFormat.generate "agent.json" instanceCfg.settings}";
           };
         })
       cfg.agents;
