@@ -53,7 +53,8 @@ in
       }
       EOF
       vault policy write demo /tmp/policy-file.hcl
-      vault kv put secret/my-secret foo=bar
+      # "blob" is a binary secret; the base64: prefix is decoded by systemd-vaultd
+      vault kv put secret/my-secret foo=bar blob="base64:$(printf '\x00\x01binary\xff' | base64)"
 
       # role for our vault agent
       vault auth enable approle
