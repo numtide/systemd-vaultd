@@ -1,9 +1,5 @@
 # systemd-vaultd - load vault credentials with systemd units
 
-> Mostly written in a train
-
-- Jörg Thalheim
-
 systemd-vaultd is a proxy between systemd and [vault agent](https://vaultproject.io).
 It provides a unix socket that can be used in systemd services in the
 `LoadCredential` option and then waits for vault agent to write these secrets in
