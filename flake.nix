@@ -28,7 +28,7 @@
               python3.pkgs.mypy
 
               golangci-lint
-              vault
+              openbao
               systemd
               hivemind
               go

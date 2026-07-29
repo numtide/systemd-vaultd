@@ -65,6 +65,12 @@ in
     description = "Instances of vault agent";
     type = lib.types.attrsOf (lib.types.submodule {
       options = {
+        package = lib.mkOption {
+          description = "Vault-compatible agent package to use (defaults to OpenBao, since HashiCorp Vault is no longer free software)";
+          type = lib.types.package;
+          default = pkgs.openbao;
+          defaultText = lib.literalExpression "pkgs.openbao";
+        };
         settings = lib.mkOption {
           description = "agent configuration";
           type = agentConfigType;
@@ -87,7 +93,7 @@ in
           path = [ pkgs.getent ];
           serviceConfig = {
             Restart = "on-failure";
-            ExecStart = "${pkgs.vault}/bin/vault agent -config=${settingsFormat.generate "agent.json" instanceCfg.settings}";
+            ExecStart = "${lib.getExe instanceCfg.package} agent -config=${settingsFormat.generate "agent.json" instanceCfg.settings}";
           };
         })
       cfg.agents;
