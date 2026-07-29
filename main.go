@@ -72,6 +72,29 @@ func listenSocket(path string) (*net.UnixListener, error) {
 	return listener, nil
 }
 
+// The requested unit/secret is derived from the client-chosen socket address,
+// so only root (systemd) or the daemon's own user may connect.
+func checkPeer(conn *net.UnixConn) error {
+	raw, err := conn.SyscallConn()
+	if err != nil {
+		return fmt.Errorf("failed to get raw connection: %w", err)
+	}
+	var cred *syscall.Ucred
+	var credErr error
+	if err := raw.Control(func(fd uintptr) {
+		cred, credErr = syscall.GetsockoptUcred(int(fd), syscall.SOL_SOCKET, syscall.SO_PEERCRED)
+	}); err != nil {
+		return fmt.Errorf("failed to access connection fd: %w", err)
+	}
+	if credErr != nil {
+		return fmt.Errorf("failed to get peer credentials: %w", credErr)
+	}
+	if cred.Uid != 0 && cred.Uid != uint32(os.Getuid()) {
+		return fmt.Errorf("connection from untrusted uid %d rejected", cred.Uid)
+	}
+	return nil
+}
+
 func parseCredentialsAddr(addr string) (*string, *string, error) {
 	// Systemd stores metadata in its local unix address
 	fields := strings.Split(addr, "/")
@@ -155,6 +178,11 @@ func (s *server) serveServiceSecrets(conn *net.UnixConn, unit string, secret str
 }
 
 func (s *server) serveConnection(conn *net.UnixConn) {
+	if err := checkPeer(conn); err != nil {
+		conn.Close()
+		log.Printf("Rejected connection: %v", err)
+		return
+	}
 	addr := conn.RemoteAddr().String()
 	unit, secret, err := parseCredentialsAddr(addr)
 	if err != nil {

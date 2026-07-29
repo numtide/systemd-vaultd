@@ -3,6 +3,9 @@ Description=systemd-vaultd socket
 
 [Socket]
 ListenStream=/run/systemd-vaultd/sock
+# Only root (systemd) may request secrets
+SocketUser=root
+SocketMode=0600
 
 [Install]
 WantedBy=sockets.target

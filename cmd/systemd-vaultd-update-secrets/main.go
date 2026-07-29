@@ -53,19 +53,8 @@ func updateSecrets(serviceName, target string) error {
 		return err
 	}
 	for key, value := range data {
-		targetPath := path.Join(target, key)
-		tempPath := targetPath + ".tmp"
-		err = os.WriteFile(tempPath, internal.SecretBytes(value), 0o400)
-		if err != nil {
-			return fmt.Errorf("failed to write file %s: %w", targetPath, err)
-		}
-		err = os.Chown(tempPath, int(uid), int(gid))
-		if err != nil {
-			return fmt.Errorf("failed to chown file %s: %w", targetPath, err)
-		}
-		err = os.Rename(tempPath, targetPath)
-		if err != nil {
-			return fmt.Errorf("failed to rename file %s: %w", targetPath, err)
+		if err := writeSecret(target, key, internal.SecretBytes(value), uid, gid); err != nil {
+			return err
 		}
 	}
 	err = os.Chtimes(target, time.Now(), time.Now())
@@ -73,6 +62,38 @@ func updateSecrets(serviceName, target string) error {
 		log.Printf("failed to update modification time of %s: %v", target, err)
 	}
 
+	return nil
+}
+
+// writeSecret atomically replaces target/key. This runs as root inside a
+// directory owned by the service user, so it must not follow symlinks:
+// the temp file is created with O_EXCL and chowned via its fd.
+func writeSecret(target, key string, content []byte, uid, gid uint32) error {
+	targetPath := path.Join(target, key)
+	f, err := os.CreateTemp(target, "."+key+".tmp*")
+	if err != nil {
+		return fmt.Errorf("failed to create temporary file for %s: %w", targetPath, err)
+	}
+	tempPath := f.Name()
+	defer func() {
+		f.Close()
+		os.Remove(tempPath)
+	}()
+	if _, err := f.Write(content); err != nil {
+		return fmt.Errorf("failed to write file %s: %w", targetPath, err)
+	}
+	if err := f.Chown(int(uid), int(gid)); err != nil {
+		return fmt.Errorf("failed to chown file %s: %w", targetPath, err)
+	}
+	if err := f.Chmod(0o400); err != nil {
+		return fmt.Errorf("failed to chmod file %s: %w", targetPath, err)
+	}
+	if err := f.Close(); err != nil {
+		return fmt.Errorf("failed to close file %s: %w", targetPath, err)
+	}
+	if err := os.Rename(tempPath, targetPath); err != nil {
+		return fmt.Errorf("failed to rename file %s: %w", targetPath, err)
+	}
 	return nil
 }
 

@@ -26,7 +26,21 @@ type connection struct {
 	connection *net.UnixConn
 }
 
-func readEvents(inotifyFd int, events chan string) {
+// used to recover from inotify queue overflows without losing requests
+func rescanSecretDir(dir string, events chan string) {
+	entries, err := os.ReadDir(dir)
+	if err != nil {
+		log.Printf("notify: failed to rescan %s after overflow: %v", dir, err)
+		return
+	}
+	for _, entry := range entries {
+		if entry.Type().IsRegular() {
+			events <- entry.Name()
+		}
+	}
+}
+
+func readEvents(inotifyFd int, dir string, events chan string) {
 	defer syscall.Close(inotifyFd)
 	var buf [syscall.SizeofInotifyEvent * 4096]byte // Buffer for a maximum of 4096 raw events
 	for {
@@ -57,8 +71,9 @@ func readEvents(inotifyFd int, events chan string) {
 			nameLen := uint32(raw.Len)
 
 			if mask&syscall.IN_Q_OVERFLOW != 0 {
-				// TODO Re-scan all files in this case
-				log.Fatal("Overflow in inotify")
+				// events were lost; re-scan the directory to catch up
+				log.Printf("notify: inotify queue overflow, re-scanning %s", dir)
+				rescanSecretDir(dir, events)
 			}
 			if nameLen > 0 {
 				// Point "bytes" at the first byte of the filename
@@ -77,12 +92,18 @@ func readEvents(inotifyFd int, events chan string) {
 	}
 }
 
+// returns the connection's fd without duplicating it, to avoid leaking
+// descriptors and to keep it valid for epoll until the connection is closed
 func connFd(conn *net.UnixConn) (int, error) {
-	file, err := conn.File()
+	raw, err := conn.SyscallConn()
 	if err != nil {
 		return -1, err
 	}
-	return int(file.Fd()), nil
+	fd := -1
+	if err := raw.Control(func(f uintptr) { fd = int(f) }); err != nil {
+		return -1, err
+	}
+	return fd, nil
 }
 
 func (s *server) watch(inotifyFd int) {
@@ -90,7 +111,7 @@ func (s *server) watch(inotifyFd int) {
 	fdToPath := make(map[int]string)
 
 	fsEvents := make(chan string)
-	go readEvents(inotifyFd, fsEvents)
+	go readEvents(inotifyFd, s.SecretDir, fsEvents)
 	for {
 		select {
 		case req, ok := <-s.inotifyRequests:
@@ -140,7 +161,7 @@ func (s *server) watch(inotifyFd int) {
 			}
 
 			for _, conn := range conns {
-				defer delete(fdToPath, conn.fd)
+				delete(fdToPath, conn.fd)
 
 				if err == nil {
 					val, ok := secretMap[conn.key]
