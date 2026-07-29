@@ -1,6 +1,7 @@
-{ config
-, pkgs
-, ...
+{
+  config,
+  pkgs,
+  ...
 }:
 let
   # The NixOS vault module and the test scripts expect a `vault` binary;
@@ -23,7 +24,11 @@ in
   environment.variables.VAULT_TOKEN = config.services.vault.devRootTokenID;
 
   systemd.services.setup-vault-agent-approle = {
-    path = [ pkgs.jq openbaoCompat pkgs.systemd ];
+    path = [
+      pkgs.jq
+      openbaoCompat
+      pkgs.systemd
+    ];
     wantedBy = [ "multi-user.target" ];
 
     serviceConfig = {

@@ -1,8 +1,10 @@
 {
   name = "vault-agent";
   nodes.machine =
-    { ...
-    }: {
+    {
+      ...
+    }:
+    {
       imports = [
         ./dev-vault-server.nix
         ../modules/vault-agent.nix

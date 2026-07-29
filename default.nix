@@ -1,4 +1,6 @@
-{ pkgs ? import <nixpkgs> { } }:
+{
+  pkgs ? import <nixpkgs> { },
+}:
 pkgs.buildGoModule {
   name = "systemd-vaultd";
   src = ./.;

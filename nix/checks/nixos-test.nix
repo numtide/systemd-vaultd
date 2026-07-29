@@ -1,12 +1,13 @@
-{ makeTest ? import <nixpkgs/nixos/tests/make-test-python.nix>
-, pkgs ? (import <nixpkgs> { })
-,
+{
+  makeTest ? import <nixpkgs/nixos/tests/make-test-python.nix>,
+  pkgs ? (import <nixpkgs> { }),
 }:
 let
-  makeTest' = args:
+  makeTest' =
+    args:
     makeTest args {
       inherit pkgs;
-      inherit (pkgs) system;
+      inherit (pkgs.stdenv.hostPlatform) system;
     };
 in
 {
@@ -22,7 +23,7 @@ in
 
     testScript = ''
       start_all()
-      machine.succeed("machinectl shell .host ${pkgs.callPackage ./unittests.nix {}} >&2")
+      machine.succeed("machinectl shell .host ${pkgs.callPackage ./unittests.nix { }} >&2")
       # machinectl does not passthru exit codes, so we have to check manually
       machine.succeed("[[ -f /tmp/success ]]")
     '';

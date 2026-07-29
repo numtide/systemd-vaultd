@@ -1,9 +1,11 @@
 {
   name = "systemd-vaultd";
   nodes.machine =
-    { config
-    , ...
-    }: {
+    {
+      config,
+      ...
+    }:
+    {
       imports = [
         ../modules/vault-agent.nix
         ../modules/systemd-vaultd.nix
