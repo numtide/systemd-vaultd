@@ -49,6 +49,7 @@
             python3.pkgs.mypy
 
             golangci-lint
+            jq
             openbao
             systemd
             hivemind
