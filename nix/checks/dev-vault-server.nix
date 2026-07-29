@@ -1,10 +1,22 @@
-{ config
-, pkgs
-, ...
-}: {
-  environment.systemPackages = [ pkgs.vault ];
+{
+  config,
+  pkgs,
+  ...
+}:
+let
+  # The NixOS vault module and the test scripts expect a `vault` binary;
+  # provide OpenBao under that name to keep everything free software.
+  openbaoCompat = pkgs.runCommand "openbao-vault-compat" { } ''
+    mkdir -p $out/bin
+    ln -s ${pkgs.lib.getExe pkgs.openbao} $out/bin/vault
+    ln -s ${pkgs.lib.getExe pkgs.openbao} $out/bin/bao
+  '';
+in
+{
+  environment.systemPackages = [ openbaoCompat ];
   services.vault = {
     enable = true;
+    package = openbaoCompat;
     dev = true;
     devRootTokenID = "phony-secret";
   };
@@ -12,7 +24,11 @@
   environment.variables.VAULT_TOKEN = config.services.vault.devRootTokenID;
 
   systemd.services.setup-vault-agent-approle = {
-    path = [ pkgs.jq pkgs.vault pkgs.systemd ];
+    path = [
+      pkgs.jq
+      openbaoCompat
+      pkgs.systemd
+    ];
     wantedBy = [ "multi-user.target" ];
 
     serviceConfig = {
