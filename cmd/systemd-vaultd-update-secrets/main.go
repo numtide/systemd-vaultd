@@ -1,7 +1,6 @@
 package main
 
 import (
-	"encoding/json"
 	"fmt"
 	"log"
 	"os"
@@ -9,6 +8,8 @@ import (
 	"strings"
 	"syscall"
 	"time"
+
+	"github.com/numtide/systemd-vaultd/internal"
 )
 
 const (
@@ -26,7 +27,6 @@ func updateSecrets(serviceName, target string) error {
 	gid := stat.Sys().(*syscall.Stat_t).Gid
 
 	jsonPath := path.Join(systemdVaultdir, fmt.Sprintf("%s.json", serviceName))
-	var content []byte
 	for i := 0; i < 10; i++ {
 		jsonStat, err := os.Stat(jsonPath)
 		if err != nil {
@@ -46,26 +46,16 @@ func updateSecrets(serviceName, target string) error {
 			continue
 		}
 
-		content, err = os.ReadFile(jsonPath)
-		if err != nil {
-			if os.IsNotExist(err) {
-				// wait for the file to be created
-				log.Printf("waiting for %s to be created", jsonPath)
-				time.Sleep(1 * time.Second)
-				continue
-			}
-			return fmt.Errorf("failed to read vault json file %s: %w", serviceName, err)
-		}
 		break
 	}
-	var data map[string]interface{}
-	if err := json.Unmarshal(content, &data); err != nil {
-		return fmt.Errorf("failed to unmarshal json from %s: %w", jsonPath, err)
+	data, err := internal.ParseServiceSecrets(jsonPath)
+	if err != nil {
+		return err
 	}
 	for key, value := range data {
 		targetPath := path.Join(target, key)
 		tempPath := targetPath + ".tmp"
-		err = os.WriteFile(tempPath, []byte(value.(string)), 0o400)
+		err = os.WriteFile(tempPath, internal.SecretBytes(value), 0o400)
 		if err != nil {
 			return fmt.Errorf("failed to write file %s: %w", targetPath, err)
 		}

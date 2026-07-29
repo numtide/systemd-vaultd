@@ -11,6 +11,8 @@ import (
 	"path/filepath"
 	"strings"
 	"syscall"
+
+	"github.com/numtide/systemd-vaultd/internal"
 )
 
 type server struct {
@@ -132,7 +134,7 @@ func (s *server) serveServiceSecrets(conn *net.UnixConn, unit string, secret str
 	log.Printf("Systemd requested secret for %s/%s", unit, secret)
 	secretName := unit + ".json"
 	secretPath := filepath.Join(s.SecretDir, secretName)
-	secretMap, err := parseServiceSecrets(secretPath)
+	secretMap, err := internal.ParseServiceSecrets(secretPath)
 	if errors.Is(err, os.ErrNotExist) {
 		if s.queueInotifyRequest(conn, secretName, secret) == nil {
 			shouldClose = false
@@ -144,7 +146,7 @@ func (s *server) serveServiceSecrets(conn *net.UnixConn, unit string, secret str
 	}
 	val, ok := secretMap[secret]
 	if ok {
-		if _, err = io.WriteString(conn, fmt.Sprint(val)); err != nil {
+		if _, err = conn.Write(internal.SecretBytes(val)); err != nil {
 			log.Printf("Failed to send secret: %v", err)
 		}
 	} else {
@@ -161,7 +163,7 @@ func (s *server) serveConnection(conn *net.UnixConn) {
 		return
 	}
 
-	if isEnvironmentFile(*secret) {
+	if internal.IsEnvironmentFile(*secret) {
 		s.serveServiceEnvironment(conn, *unit, *secret)
 	} else {
 		s.serveServiceSecrets(conn, *unit, *secret)

@@ -19,6 +19,7 @@
         wantedBy = [ "multi-user.target" ];
         script = ''
           cat $CREDENTIALS_DIRECTORY/foo > /tmp/service1
+          cat $CREDENTIALS_DIRECTORY/blob > /tmp/service1-blob
           echo -n "$SECRET_ENV" > /tmp/service1-env
         '';
         #serviceConfig = {
@@ -29,6 +30,7 @@
             {{ with secret "secret/my-secret" }}{{ .Data.data | toJSON }}{{ end }}
           '';
           secrets.foo = { };
+          secrets.blob = { };
           environmentTemplate = ''
             {{ with secret "secret/my-secret" }}
             SECRET_ENV={{ .Data.data.foo }}
@@ -101,6 +103,9 @@
     out = machine.wait_until_succeeds("grep -q bar /tmp/service1")
 
     out = machine.succeed("grep -q bar /tmp/service1-env")
+
+    # binary secrets with the base64: prefix are decoded before serving
+    machine.succeed("printf '\\x00\\x01binary\\xff' | cmp - /tmp/service1-blob")
 
     out = machine.succeed("systemctl status service2 || :")
     print(out)
