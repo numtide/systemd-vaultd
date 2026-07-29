@@ -1,6 +1,6 @@
 {
   name = "systemd-vaultd";
-  nodes.server =
+  nodes.machine =
     { config
     , ...
     }: {
@@ -102,7 +102,7 @@
 
     out = machine.succeed("systemctl status service2 || :")
     print(out)
-    assert "(sd-mkdcreds)" in out, "service2 should be still blocked"
+    assert "Active: activating" in out, "service2 should be still blocked"
 
     machine.succeed("vault kv put secret/blocking-secret foo=bar")
     machine.wait_until_succeeds("grep -q bar /tmp/service2 >&2")
@@ -127,6 +127,7 @@
 
     # get permissions in octal
     out = machine.succeed("stat -c %a /run/service2/secrets/secret").strip()
-    assert out == "400", "service2 should have access to secret file with permissions 0400, got " + out
+    # systemd exposes credentials with mode 0440
+    assert out == "440", "service2 should have access to secret file with permissions 0440, got " + out
   '';
 }
