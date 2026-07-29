@@ -44,6 +44,12 @@ repository:
   # rebase-merging.
   allow_rebase_merge: true
 
+  # Either `true` to allow auto-merge on pull requests, or `false` to disable it.
+  allow_auto_merge: true
+
+  # Either `true` to always suggest updating pull request branches, or `false` to disable it.
+  allow_update_branch: true
+
   # Either `true` to enable automatic deletion of branches on merge, or `false` to disable
   delete_branch_on_merge: true
 
