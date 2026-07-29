@@ -8,8 +8,8 @@ import (
 	"strings"
 )
 
-// ParseServiceSecrets reads a service secret json file. String values
-// prefixed with "base64:" are decoded to []byte to support binary secrets.
+// ParseServiceSecrets reads a service secret json file. String values with a
+// "base64:" prefix are decoded to []byte to support binary secrets.
 func ParseServiceSecrets(path string) (map[string]interface{}, error) {
 	content, err := os.ReadFile(path)
 	if err != nil {
@@ -37,8 +37,7 @@ func IsEnvironmentFile(secret string) bool {
 	return strings.HasSuffix(secret, ".service.EnvironmentFile")
 }
 
-// SecretBytes returns the byte representation of a secret value as stored in
-// the map returned by ParseServiceSecrets.
+// SecretBytes returns the byte representation of a parsed secret value.
 func SecretBytes(val interface{}) []byte {
 	switch v := val.(type) {
 	case []byte:
